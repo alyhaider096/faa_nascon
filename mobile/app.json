@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "LeagueOps",
+    "slug": "leagueops",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/leagueops-icon.png",
+    "splash": {
+      "image": "./assets/leagueops-splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#071522"
+    },
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.faa.leagueops",
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#071522",
+        "foregroundImage": "./assets/leagueops-icon.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": ["expo-router", "expo-secure-store"]
+  }
+}
