@@ -14,6 +14,8 @@ npx expo start
 
 The app's Settings screen stores the backend laptop address, for example `http://192.168.1.20:8080`. A physical phone and backend laptop must be on the same hotspot. Demo mode previews the UI without the backend. The red/green status bar and sync queue show offline state. Demo purchases are marked as demo receipts and are not signed by the backend.
 
+To make a local installable Android APK, run `cd mobile/android` and `./gradlew :app:assembleRelease`; the result is `app/build/outputs/apk/release/app-release.apk`. On the team's Windows laptop with slow Wi-Fi, `-I ../scripts/use-installed-ndk.gradle` uses its already-installed Android NDK 27.0 instead of downloading Expo's default NDK 27.1. This is a local build shortcut, not a change to the checked-in Expo native configuration. Copy the verified APK to `mobile/release/app-release.apk` for submission.
+
 Demo accounts all use `Nascon@26`: `admin@nascon.test`, `organizer@nascon.test`, `manager@nascon.test`, `player@nascon.test`, and `viewer@nascon.test`.
 
 ## Run the backend

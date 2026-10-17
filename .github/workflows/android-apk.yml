@@ -1,0 +1,46 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/android-apk.yml'
+
+jobs:
+  release-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install JavaScript dependencies
+        working-directory: mobile
+        run: npm ci --legacy-peer-deps
+      - name: Generate Android project
+        working-directory: mobile
+        run: npx expo prebuild --platform android --no-install
+      - name: Build installable release APK
+        working-directory: mobile/android
+        run: bash ./gradlew :app:assembleRelease --no-daemon --console=plain
+      - name: Stage required APK path
+        run: |
+          mkdir -p mobile/release
+          cp mobile/android/app/build/outputs/apk/release/app-release.apk mobile/release/app-release.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: leagueops-android-apk
+          path: mobile/release/app-release.apk
+          if-no-files-found: error
