@@ -1,4 +1,5 @@
 .env
+.env.local
 .env.*.local
 node_modules/
 .claude/
@@ -17,3 +18,4 @@ __pycache__/
 !mobile/release/app-release.apk
 .coverage
 COVERAGE.xml
+tmp/
