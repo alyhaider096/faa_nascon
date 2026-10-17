@@ -305,9 +305,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } finally { setSyncing(false); }
   }, [account, api, demoMode, online, queue, serverUrl, syncing]);
   const clearResolved = useCallback(async () => {
-    if (web) { const retained = queue.filter(a => a.status === 'pending' || a.owner !== `${serverUrl}:${account?.user_id ?? 'demo'}`); localStorage.setItem('leagueops:actions', JSON.stringify(retained)); setQueue(retained); return; }
+    if (web) { const retained = queue.filter(a => a.status !== 'applied' || a.owner !== `${serverUrl}:${account?.user_id ?? 'demo'}`); localStorage.setItem('leagueops:actions', JSON.stringify(retained)); setQueue(retained); return; }
     const db = await database();
-    const resolved = queue.filter(a => a.status !== 'pending' && a.owner === `${serverUrl}:${account?.user_id ?? 'demo'}`);
+    const resolved = queue.filter(a => a.status === 'applied' && a.owner === `${serverUrl}:${account?.user_id ?? 'demo'}`);
     await Promise.all(resolved.map(a => db.runAsync('DELETE FROM actions WHERE id = ?', a.action_id)));
     setQueue(current => current.filter(a => !resolved.some(r => r.action_id === a.action_id)));
   }, [account, queue, serverUrl]);
