@@ -1,6 +1,6 @@
 export type Role = 'super_admin' | 'league_organizer' | 'club_manager' | 'player' | 'viewer';
-export type Fixture = { id: string; sport: string; league: string; home: string; away: string; homeId: string; awayId: string; version: number; eventTypes: string[]; events: { clock: string; label: string; team: string }[]; pinnedProductId?: string; time: string; status: string; score: string; venue: string };
-export type Product = { id: string; name: string; category: string; priceMinor: number; variants: { id: string; label: string; stock: number }[] };
+export type Fixture = { id: string; sport: string; league: string; home: string; away: string; homeId: string; awayId: string; version: number; eventTypes: string[]; events: { id?: string; clock: string; label: string; team: string }[]; pinnedProductId?: string; time: string; status: string; score: string; venue: string };
+export type Product = { id: string; name: string; category: string; priceMinor: number; variants: { id: string; label: string; stock: number; priceMinor?: number }[] };
 
 export const DEMO_PASSWORD = 'Nascon@26';
 export const ACCOUNTS: { email: string; role: Role; label: string }[] = [

@@ -31,9 +31,11 @@ export default function Score() {
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 15 }}>
       {fixture?.eventTypes.map(value => <Pressable key={value} onPress={() => setEventType(value)} accessibilityRole="button" accessibilityState={{ selected: eventType === value }} style={{ minHeight: 48, paddingHorizontal: 14, borderRadius: 24, borderWidth: 1, borderColor: eventType === value ? C.accent : C.line, backgroundColor: eventType === value ? C.surface2 : C.surface, justifyContent: 'center' }}><Text style={{ color: eventType === value ? C.accent : C.text, fontWeight: '700' }}>{value.replaceAll('_', ' ')}</Text></Pressable>)}
     </View>
+    {!fixture?.eventTypes.length ? <Field label="Event type from league rules" value={eventType} onChangeText={setEventType} placeholder="Enter a configured event type" /> : null}
     <Button title="Add scoring event" onPress={() => void submit(false)} />
     <Text style={{ color: C.text, fontSize: 18, fontWeight: '800', marginTop: 23, marginBottom: 10 }}>Correct an event</Text>
     <Field label="Event ID to compensate" value={compensates} onChangeText={setCompensates} placeholder="evt-..." />
+    {fixture?.events.filter(event => event.id).map(event => <Card key={event.id} onPress={() => setCompensates(event.id ?? '')}><Text style={{ color: C.text }}>{event.label} · {event.team}{compensates === event.id ? '  ✓' : ''}</Text></Card>)}
     <Button title="Append correction" secondary onPress={() => Alert.alert('Confirm correction', 'The original event will remain in the audit log.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Append', onPress: () => void submit(true) }])} />
     {feedback ? <Text style={{ color: C.accent, marginTop: 10 }}>{feedback}</Text> : null}
     <Button title="Open sync queue" secondary onPress={() => router.push('/queue')} />

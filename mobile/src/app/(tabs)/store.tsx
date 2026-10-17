@@ -2,13 +2,13 @@ import { router } from 'expo-router';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { Button, Card, Muted, Page, Pill, SectionTitle } from '../../components/UI';
-import { PRODUCTS, formatMoney } from '../../data/mock';
+import { formatMoney } from '../../data/mock';
 import { useApp } from '../../state/AppContext';
 import { C } from '../../theme';
 
 export default function Store() {
-  const { cart, demoMode } = useApp();
-  const catalogue = demoMode ? PRODUCTS : PRODUCTS.filter(product => product.id === 'prod-jersey-001');
+  const { cart, products: PRODUCTS } = useApp();
+  const catalogue = PRODUCTS;
   return <Page eyebrow="Club merchandise" title="Store" subtitle="Official club products and matchday items.">
     {PRODUCTS[0] ? <Card accent><Pill text="MATCHDAY PICK" /><Text style={{ color: C.text, fontSize: 23, fontWeight: '800', marginTop: 14 }}>{PRODUCTS[0].name}</Text><Text style={{ color: C.accent, fontSize: 19, fontWeight: '800', marginTop: 5 }}>{formatMoney(PRODUCTS[0].priceMinor)}</Text><Button title="Shop this item  →" onPress={() => router.push({ pathname: '/product/[id]', params: { id: PRODUCTS[0].id } })} /></Card> : null}
     <SectionTitle title="Catalogue" action={`${catalogue.length} products`} />

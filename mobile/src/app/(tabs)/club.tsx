@@ -7,10 +7,10 @@ import { C } from '../../theme';
 
 export default function Club() {
   const { club, account } = useApp();
-  return <Page eyebrow="Tenant Alpha · Club profile" title={club.name} subtitle="Roster, staff, and home venue.">
-    <Card accent><BrandMark /><Pill text={club.tag} /><Text style={{ color: C.text, fontSize: 17, fontWeight: '700', marginTop: 15 }}>Home ground · {club.venue}</Text><Muted>Established {club.founded} · Capital League</Muted></Card>
+  return <Page eyebrow="Club profile" title={club.name} subtitle="Roster, staff, and home venue.">
+    <Card accent><BrandMark /><Pill text={club.tag} /><Text style={{ color: C.text, fontSize: 17, fontWeight: '700', marginTop: 15 }}>Home ground · {club.venue}</Text></Card>
     <SectionTitle title="First team roster" action={`${club.roster.length} players`} />
-    {club.roster.map(p => <Card key={p.number}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 13 }}><Text style={{ color: C.accent, fontSize: 24, fontWeight: '800', width: 32 }}>{p.number}</Text><View><Text style={{ color: C.text, fontSize: 16, fontWeight: '800' }}>{p.name}</Text><Muted>{p.position} · {p.role}</Muted></View></View></Card>)}
+    {club.roster.length ? club.roster.map(p => <Card key={p.id ?? p.name}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 13 }}><Text style={{ color: C.accent, fontSize: 24, fontWeight: '800', width: 32 }}>{p.number}</Text><View style={{ flex: 1 }}><Text style={{ color: C.text, fontSize: 16, fontWeight: '800' }}>{p.name}</Text><Muted>{p.position} {p.role}</Muted></View></View></Card>) : <Muted>No players registered for this club yet.</Muted>}
     {canManageRoster(account?.role) ? <Button title="Manage roster  →" onPress={() => router.push('/roster')} /> : null}
     <Button title="App settings" secondary onPress={() => router.push('/settings')} />
     <SectionTitle title="Club staff" />

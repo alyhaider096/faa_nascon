@@ -1,18 +1,18 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Text } from 'react-native';
 import { Button, Card, Muted, Page, Pill, SectionTitle } from '../../components/UI';
 import { MatchCard } from '../../components/MatchCard';
 import { canScore, useApp } from '../../state/AppContext';
-import { PRODUCTS } from '../../data/mock';
 import { C } from '../../theme';
 
 export default function MatchDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { fixtures, account } = useApp();
+  const { fixtures, account, products, watchMatch } = useApp();
+  useEffect(() => watchMatch(id), [id, watchMatch]);
   const f = fixtures.find(x => x.id === id);
   if (!f) return <Page title="Match not found"><Muted>This match is unavailable.</Muted></Page>;
-  const pinned = PRODUCTS.find(product => product.id === f.pinnedProductId);
+  const pinned = products.find(product => product.id === f.pinnedProductId);
   return <Page eyebrow={`${f.sport} · ${f.league}`} title="Match centre" subtitle={`${f.time} · ${f.venue}`}>
     <MatchCard fixture={f} featured />
     {canScore(account?.role) ? <Button title="Enter scoring event  →" onPress={() => router.push({ pathname: '/score', params: { id: f.id } })} /> : null}

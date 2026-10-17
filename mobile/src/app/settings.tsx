@@ -21,7 +21,7 @@ export default function Settings() {
     <Muted>Use the backend laptop’s hotspot IP. The API port is 8080.</Muted>
     <SectionTitle title="Data source" />
     <Card><View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><View style={{ flex: 1 }}><Text style={{ color: C.text, fontWeight: '800' }}>Demo data</Text><Muted>Preview screens without the backend</Muted></View><Switch value={demoMode} onValueChange={value => void setDemoMode(value)} trackColor={{ true: C.accentDark }} thumbColor={C.accent} /></View></Card>
-    <Button title="Save demo screens for offline use" secondary onPress={() => void refreshCache().then(() => { setFeedbackError(false); setFeedback('Fixtures, standings and club profile cached.'); })} />
+    <Button title="Refresh and cache server data" secondary onPress={() => void refreshCache().then(() => { setFeedbackError(false); setFeedback('Refresh finished. See any connection warning above.'); })} />
     {feedback ? <Text accessibilityRole="alert" style={{ color: feedbackError ? C.danger : C.accent, marginTop: 10 }}>{feedback}</Text> : null}
     <SectionTitle title="Account" />
     <Card><Pill text={account?.label ?? 'SIGNED OUT'} /><Text style={{ color: C.text, fontWeight: '800', marginTop: 10 }}>{account?.email ?? 'Sign in to continue'}</Text></Card>

@@ -1,9 +1,12 @@
 import React from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { C, TENANT } from '../theme';
+import { useApp } from '../state/AppContext';
 
 export function BrandMark() {
-  return <View accessibilityLabel={`${TENANT.name} logo`} style={{ width: 54, height: 54, borderRadius: 16, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}><Text style={{ color: C.bg, fontSize: 29, fontWeight: '900' }}>{TENANT.logoText}</Text></View>;
+  const { tenant } = useApp();
+  const name = tenant?.branding.display_name ?? tenant?.name ?? TENANT.name;
+  return <View accessibilityLabel={`${name} logo`} style={{ width: 54, height: 54, borderRadius: 16, backgroundColor: tenant?.branding.primary_color ?? C.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>{tenant?.branding.logo_url ? <Image source={{ uri: tenant.branding.logo_url }} style={{ width: 48, height: 48 }} resizeMode="contain" /> : <Text style={{ color: tenant ? '#FFFFFF' : C.bg, fontSize: 29, fontWeight: '900' }}>{name[0]}</Text>}</View>;
 }
 
 export function AppMark({ size = 64 }: { size?: number }) {
@@ -11,10 +14,14 @@ export function AppMark({ size = 64 }: { size?: number }) {
 }
 
 export function Page({ children, title, eyebrow, subtitle }: { children: React.ReactNode; title: string; eyebrow?: string; subtitle?: string }) {
+  const { tenant, loading, dataError, account, refreshCache } = useApp();
+  const tenantName = tenant?.branding.display_name ?? tenant?.name ?? TENANT.name;
   return <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-    {eyebrow ? <View style={styles.pageTop}><Text style={styles.eyebrow}>{eyebrow.toUpperCase()}</Text><View style={styles.tenantBadge} accessibilityLabel={`${TENANT.name} tenant`}><Text style={styles.tenantInitial}>{TENANT.logoText}</Text><Text style={styles.tenantName}>{TENANT.name.toUpperCase()}</Text></View></View> : null}
+    {eyebrow ? <View style={styles.pageTop}><Text style={styles.eyebrow}>{eyebrow.toUpperCase()}</Text><View style={styles.tenantBadge} accessibilityLabel={`${tenantName} tenant`}><Text style={[styles.tenantInitial, tenant?.branding.primary_color ? { backgroundColor: tenant.branding.primary_color, color: '#FFFFFF' } : {}]}>{tenantName[0]}</Text><Text numberOfLines={1} style={styles.tenantName}>{tenantName.toUpperCase()}</Text></View></View> : null}
     <Text style={styles.title}>{title}</Text>
     {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+    {loading ? <ActivityIndicator color={C.accent} accessibilityLabel="Refreshing server data" style={{ marginBottom: 12 }} /> : null}
+    {dataError && account ? <View style={{ marginBottom: 14 }}><Text accessibilityRole="alert" style={{ color: C.danger }}>{dataError}</Text><Button title="Retry connection" secondary loading={loading} onPress={() => void refreshCache()} /></View> : null}
     {children}
   </ScrollView>;
 }
@@ -43,9 +50,9 @@ const styles = StyleSheet.create({
   page: { flexGrow: 1, backgroundColor: C.bg, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 },
   pageTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 8 },
   eyebrow: { color: C.accent, letterSpacing: 1.5, fontWeight: '800', fontSize: 11, flexShrink: 1 },
-  tenantBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 0 },
+  tenantBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: '48%', flexShrink: 1 },
   tenantInitial: { color: C.bg, backgroundColor: C.accent, width: 19, height: 19, borderRadius: 5, textAlign: 'center', textAlignVertical: 'center', fontWeight: '900', fontSize: 12 },
-  tenantName: { color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: .6 },
+  tenantName: { color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: .6, flexShrink: 1 },
   title: { color: C.text, fontSize: 29, fontWeight: '800', letterSpacing: -.5, marginBottom: 8 },
   subtitle: { color: C.muted, fontSize: 15, lineHeight: 22, marginBottom: 24 },
   card: { backgroundColor: C.surface, borderColor: C.line, borderWidth: 1, borderRadius: 13, padding: 16, marginBottom: 10 },
