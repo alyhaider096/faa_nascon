@@ -16,6 +16,9 @@ The Android app uses the backend address saved in Settings. Demo mode remains av
 - `npm run typecheck`, `npm run lint` and `node scripts/check-api.cjs` pass.
 - The browser preview reaches Fixtures → Match detail → Product → Checkout → Receipt in demo mode.
 - An earlier APK was installed and opened on a physical Pixel 8 Pro. Demo login, Fixtures, Store, product detail, and checkout loaded. The final design/API APK and live airplane-mode sync still need device verification.
+- The 14:30 PKT redesigned APK opened on the Pixel and rendered the football image, floating navigation, Fixtures and Club in portrait and landscape. The user's laptops were not yet on the same hotspot, so native live API login was not counted as an integration pass.
+- We found that Expo SDK 55 did not carry the app.json cleartext setting into the generated release manifest. `mobile/plugins/withCleartextTraffic.js` now explicitly writes `android:usesCleartextTraffic="true"`; local prebuild output verifies the attribute. The subsequent APK must still be installed and retested.
+- The laptop browser preview receives HTTP 405 for an `OPTIONS /api/v1/auth/login` preflight from `http://localhost:19006`, so live web login is blocked by backend CORS. Native Android does not require CORS. If web preview is needed for judging, allow this development origin and the `Content-Type` and `Authorization` headers.
 
 ## Judge UI/HCI checklist (honest status)
 
