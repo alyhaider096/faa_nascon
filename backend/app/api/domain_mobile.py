@@ -34,8 +34,11 @@ def league_standings(league_id: str, request: Request):
 
 @router.get("/matches/{match_id}")
 def match_detail(match_id: str, request: Request):
-    authenticate(request)
+    claims = authenticate(request)
     with tx() as conn:
+        league_id = bridge.match_league_id(conn, match_id)
+        if league_id is not None:
+            _league_scope(conn, claims, league_id)
         return bridge.project_score(conn, match_id)
 
 
