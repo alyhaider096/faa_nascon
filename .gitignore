@@ -16,6 +16,7 @@ __pycache__/
 .venv/
 *.pyc
 !mobile/release/app-release.apk
+mobile/release/leagueops-artifact.zip
 .coverage
 COVERAGE.xml
 tmp/

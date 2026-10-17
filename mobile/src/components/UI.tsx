@@ -1,12 +1,12 @@
 import React from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { C, TENANT } from '../theme';
+import { C, DISPLAY_FONT, TENANT } from '../theme';
 import { useApp } from '../state/AppContext';
 
 export function BrandMark() {
   const { tenant } = useApp();
   const name = tenant?.branding.display_name ?? tenant?.name ?? TENANT.name;
-  return <View accessibilityLabel={`${name} logo`} style={{ width: 54, height: 54, borderRadius: 16, backgroundColor: tenant?.branding.primary_color ?? C.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>{tenant?.branding.logo_url ? <Image source={{ uri: tenant.branding.logo_url }} style={{ width: 48, height: 48 }} resizeMode="contain" /> : <Text style={{ color: tenant ? '#FFFFFF' : C.bg, fontSize: 29, fontWeight: '900' }}>{name[0]}</Text>}</View>;
+  return <View accessibilityLabel={`${name} logo`} style={{ width: 54, height: 54, borderRadius: 12, backgroundColor: tenant?.branding.primary_color ?? C.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>{tenant?.branding.logo_url ? <Image source={{ uri: tenant.branding.logo_url }} style={{ width: 48, height: 48 }} resizeMode="contain" /> : <Text style={{ color: tenant ? '#FFFFFF' : C.bg, fontSize: 29, fontWeight: '900' }}>{name[0]}</Text>}</View>;
 }
 
 export function AppMark({ size = 64 }: { size?: number }) {
@@ -47,17 +47,17 @@ export function SectionTitle({ title, action }: { title: string; action?: string
 export function Muted({ children }: { children: React.ReactNode }) { return <Text style={styles.muted}>{children}</Text>; }
 
 const styles = StyleSheet.create({
-  page: { flexGrow: 1, backgroundColor: C.bg, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 },
+  page: { flexGrow: 1, backgroundColor: C.bg, paddingHorizontal: 20, paddingTop: 25, paddingBottom: 40 },
   pageTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 8 },
   eyebrow: { color: C.accent, letterSpacing: 1.5, fontWeight: '800', fontSize: 11, flexShrink: 1 },
   tenantBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: '48%', flexShrink: 1 },
   tenantInitial: { color: C.bg, backgroundColor: C.accent, width: 19, height: 19, borderRadius: 5, textAlign: 'center', textAlignVertical: 'center', fontWeight: '900', fontSize: 12 },
   tenantName: { color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: .6, flexShrink: 1 },
-  title: { color: C.text, fontSize: 29, fontWeight: '800', letterSpacing: -.5, marginBottom: 8 },
+  title: { color: C.text, fontSize: 36, fontWeight: '900', fontFamily: DISPLAY_FONT, letterSpacing: -.7, marginBottom: 6, textTransform: 'uppercase' },
   subtitle: { color: C.muted, fontSize: 15, lineHeight: 22, marginBottom: 24 },
-  card: { backgroundColor: C.surface, borderColor: C.line, borderWidth: 1, borderRadius: 13, padding: 16, marginBottom: 10 },
+  card: { backgroundColor: C.surface, borderColor: C.line, borderWidth: 1, borderRadius: 12, padding: 16, marginBottom: 10 },
   accentCard: { backgroundColor: C.surface2, borderColor: C.accentDark },
-  button: { backgroundColor: C.accent, minHeight: 50, paddingHorizontal: 18, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginVertical: 6 },
+  button: { backgroundColor: C.accent, minHeight: 52, paddingHorizontal: 18, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginVertical: 6 },
   secondaryButton: { backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line },
   dangerButton: { backgroundColor: C.danger },
   buttonText: { color: C.bg, fontSize: 15, fontWeight: '800' },
@@ -65,6 +65,6 @@ const styles = StyleSheet.create({
   input: { backgroundColor: C.surface, borderColor: C.line, borderWidth: 1, borderRadius: 11, color: C.text, minHeight: 50, paddingHorizontal: 14, fontSize: 16 },
   pill: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 50 },
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 19, marginBottom: 12 },
-  sectionTitle: { color: C.text, fontSize: 19, fontWeight: '800' }, sectionAction: { color: C.accent, fontSize: 12, fontWeight: '700' },
+  sectionTitle: { color: C.text, fontSize: 21, fontWeight: '900', fontFamily: DISPLAY_FONT, textTransform: 'uppercase' }, sectionAction: { color: C.accent, fontSize: 12, fontWeight: '700' },
   muted: { color: C.muted, fontSize: 14, lineHeight: 21 },
 });
