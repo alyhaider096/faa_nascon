@@ -16,3 +16,16 @@ The Android app uses the backend address saved in Settings. Demo mode remains av
 - `npm run typecheck`, `npm run lint` and `node scripts/check-api.cjs` pass.
 - The browser preview reaches Fixtures → Match detail → Product → Checkout → Receipt in demo mode.
 - An earlier APK was installed and opened on a physical Pixel 8 Pro. Demo login, Fixtures, Store, product detail, and checkout loaded. The final design/API APK and live airplane-mode sync still need device verification.
+
+## Judge UI/HCI checklist (honest status)
+
+| Judge task or criterion | Current status | Remaining proof or dependency |
+| --- | --- | --- |
+| A: standings, then open a match | Demo browser route works; phone opened Fixtures | Final phone journey; live fixture IDs and working standings from `/reset` |
+| B: merchandise, mock payment, receipt | Demo browser route works; phone reached checkout | Final phone receipt/PDF; live product stock, checkout and signed receipt |
+| C: manager roster action | Role-gated screen and durable queue implemented | Live seeded player/squad IDs and final phone action |
+| Airplane mode, force-close, reconnect | SQLite persists cache and action queue in app code | Physical-device force-close/reopen and server applied/rejected replay |
+| Navigation, visual hierarchy, feedback, readability | Shared design system, visible sync bar, labelled tabs, plain-language messages; narrow browser preview checked | Final APK at 360×640 dp and rotated, all five roles |
+| Tenant branding | Tenant name, logo URL and brand mark use bootstrap response | Confirm live logo URL and color contrast; full tenant-wide color theming is not yet verified |
+
+The app offers five demo-account shortcuts and a visible sign-out/switch-account action on the Club tab. Self-service sign-up is not in the judged screen list and no registration endpoint has been provided; do not present a fake live sign-up.
