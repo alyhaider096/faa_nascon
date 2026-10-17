@@ -21,7 +21,7 @@ export default function Login() {
     <Button title={busy ? 'Signing in…' : 'Sign in'} loading={busy} onPress={() => void submit()} />
     <Button title="Server settings" secondary onPress={() => router.push('/settings')} />
     <View style={{ marginTop: 22 }}><Text style={{ color: C.text, fontSize: 17, fontWeight: '800', marginBottom: 5 }}>Test accounts</Text><Muted>Tap a role to fill its sign-in details. All five roles use the same test password.</Muted>
-      {ACCOUNTS.map(a => <Pressable key={a.email} onPress={() => { setEmail(a.email); setPassword(DEMO_PASSWORD); setError(''); }} style={{ paddingVertical: 10, borderBottomWidth: 1, borderColor: C.line }}><Text style={{ color: C.accent, fontWeight: '700' }}>{a.label}</Text><Text style={{ color: C.muted, fontSize: 12 }}>{a.email}</Text></Pressable>)}
+      {ACCOUNTS.map(a => <Pressable key={a.email} onPress={() => { setEmail(a.email); setPassword(DEMO_PASSWORD); setError(''); }} style={({ pressed }) => ({ minHeight: 58, padding: 14, marginBottom: 8, borderRadius: 15, backgroundColor: C.surface2, opacity: pressed ? .8 : 1 })}><Text style={{ color: C.accent, fontWeight: '700' }}>{a.label}</Text><Text style={{ color: C.muted, fontSize: 12 }}>{a.email}</Text></Pressable>)}
     </View>
   </Page>;
 }

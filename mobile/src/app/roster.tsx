@@ -53,7 +53,7 @@ export default function Roster() {
     <Card accent><Pill text={online ? 'CONNECTED' : 'OFFLINE · QUEUE ACTIVE'} tone={online ? 'mint' : 'gold'} /><Text style={{ color: C.text, fontWeight: '800', fontSize: 17, marginTop: 12 }}>{club.name}</Text><Muted>Squad changes keep a dated audit trail.</Muted></Card>
     <Text style={{ color: C.text, fontSize: 18, fontWeight: '800', marginBottom: 10 }}>Choose action</Text>
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 14 }}>
-      {actions.map(item => <Pressable key={item.id} onPress={() => { setAction(item.id); setFeedback(''); setFeedbackError(false); }} accessibilityRole="button" accessibilityState={{ selected: action === item.id }} style={{ width: '48%', minHeight: 82, backgroundColor: action === item.id ? C.surface2 : C.surface, borderColor: action === item.id ? C.accent : C.line, borderWidth: 1, borderRadius: 13, padding: 12, marginBottom: 9, justifyContent: 'center' }}>
+      {actions.map(item => <Pressable key={item.id} onPress={() => { setAction(item.id); setFeedback(''); setFeedbackError(false); }} accessibilityRole="button" accessibilityState={{ selected: action === item.id }} style={({ pressed }) => ({ width: '48%', minHeight: 82, backgroundColor: action === item.id ? C.accentDark : C.surface2, borderRadius: 18, padding: 13, marginBottom: 9, justifyContent: 'center', opacity: pressed ? .8 : 1 })}>
         <Text style={{ color: action === item.id ? C.accent : C.text, fontSize: 15, fontWeight: '800' }}>{item.title}</Text>
         <Text style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>{item.detail}</Text>
       </Pressable>)}

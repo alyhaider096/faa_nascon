@@ -7,7 +7,7 @@ import { Card, Pill } from './UI';
 function Team({ name }: { name: string }) {
   const initials = name.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
   return <View style={{ flex: 1, alignItems: 'center', minWidth: 0 }}>
-    <View style={{ width: 43, height: 43, borderRadius: 22, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center', marginBottom: 9 }}>
+    <View style={{ width: 43, height: 43, borderRadius: 22, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', marginBottom: 9 }}>
       <Text style={{ color: C.text, fontSize: 14, fontWeight: '900' }}>{initials}</Text>
     </View>
     <Text numberOfLines={2} style={{ color: C.text, fontSize: 14, fontWeight: '800', textAlign: 'center', lineHeight: 18 }}>{name}</Text>
@@ -28,7 +28,7 @@ export function MatchCard({ fixture, featured = false, onPress }: { fixture: Fix
       </View>
       <Team name={fixture.away} />
     </View>
-    <View style={{ borderTopWidth: 1, borderTopColor: C.line, paddingTop: 11, flexDirection: 'row', justifyContent: 'space-between', gap: 6 }}>
+    <View style={{ paddingTop: 11, flexDirection: 'row', justifyContent: 'space-between', gap: 6 }}>
       <Text numberOfLines={1} style={{ color: C.muted, fontSize: 12, flex: 1 }}>{fixture.venue}</Text>
       {onPress ? <Text style={{ color: C.accent, fontSize: 12, fontWeight: '900', letterSpacing: .3 }}>MATCH CENTRE  →</Text> : null}
     </View>
