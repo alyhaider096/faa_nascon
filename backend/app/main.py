@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from starlette.concurrency import run_in_threadpool
+from starlette.middleware.cors import CORSMiddleware
 
 from .core import db, realtime
 from .core.config import get_settings
@@ -90,9 +91,16 @@ def create_app() -> FastAPI:
         finally:
             realtime.hub.disconnect(match_id, ws)
 
-    # Outermost first: rate limit, then body cap, then routing.
+    # CORS is added last so it is outermost and preflights never reach route/method handling.
     app.add_middleware(BodyLimitMiddleware, settings=settings)
     app.add_middleware(RateLimitMiddleware, settings=settings)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.cors_origins),
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
+        expose_headers=["Content-Disposition"],
+    )
     return app
 
 

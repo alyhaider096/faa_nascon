@@ -20,6 +20,10 @@ class Settings:
     rate_limit_requests: int = 100
     rate_limit_window_seconds: float = 10.0
     token_ttl_seconds: int = 4 * 3600
+    cors_origins: tuple[str, ...] = (
+        "http://localhost:19006",
+        "http://127.0.0.1:19006",
+    )
 
 
 _settings: Settings | None = None
@@ -32,11 +36,20 @@ def load_settings(env: dict | None = None) -> Settings:
         raise ConfigError(
             "DAY1_SALT is not set. Start with: DAY1_SALT=<team-secret> docker compose up -d --build"
         )
+    cors_origins = tuple(
+        origin.strip()
+        for origin in env.get(
+            "CORS_ORIGINS",
+            "http://localhost:19006,http://127.0.0.1:19006",
+        ).split(",")
+        if origin.strip()
+    )
     return Settings(
         day1_salt=salt,
         database_url=env.get("DATABASE_URL", "postgresql://nascon:nascon@db:5432/nascon"),
         redis_url=env.get("REDIS_URL", "redis://redis:6379/0"),
         pool_max=int(env.get("DB_POOL_MAX", "40")),
+        cors_origins=cors_origins,
     )
 
 
