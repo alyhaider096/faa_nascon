@@ -1,0 +1,16 @@
+.env
+.env.*.local
+node_modules/
+.expo/
+android/.gradle/
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+mobile/ios/
+*.keystore
+*.jks
+__pycache__/
+.pytest_cache/
+.venv/
+*.pyc
+!mobile/release/app-release.apk
