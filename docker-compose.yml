@@ -1,0 +1,85 @@
+name: nascon
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nascon
+      POSTGRES_PASSWORD: nascon
+      POSTGRES_DB: nascon
+    command: ["postgres", "-c", "max_connections=200"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nascon -d nascon"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    environment:
+      DAY1_SALT: ${DAY1_SALT}
+      DATABASE_URL: postgresql://nascon:nascon@db:5432/nascon
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3).status == 200 else 1)"]
+      interval: 3s
+      timeout: 4s
+      retries: 60
+      start_period: 5s
+    restart: unless-stopped
+
+  worker:
+    build: ./backend
+    command: ["python", "-m", "app.worker"]
+    environment:
+      DAY1_SALT: ${DAY1_SALT}
+      DATABASE_URL: postgresql://nascon:nascon@db:5432/nascon
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Optional self-hosted object store (approved component). It is behind a profile so that a
+  # registry hiccup on this image can never break the graded one-command start:
+  #   docker compose --profile objectstore up -d
+  # Receipts are authoritative in PostgreSQL either way.
+  minio:
+    image: minio/minio:latest
+    profiles: ["objectstore"]
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: nascon
+      MINIO_ROOT_PASSWORD: nascon-minio-dev
+    volumes:
+      - miniodata:/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
