@@ -1,27 +1,20 @@
-# Platform ↔ domain interfaces (frozen)
+# Platform <-> domain integration (implemented)
 
-The platform (entrypoint, middleware, migrations, store, roster, RBAC, offline coordinator, mobile API,
-worker) calls the sports/scoring/standings modules only through these hooks. Define them in
-`backend/app/domain/<module>.py`; nothing else needs to change.
+The domain owner's services (`app.domain.{sports,scoring,fixtures,standings,scheduling,seeds}`) take a
+SQLAlchemy `Session`. The platform owns one psycopg transaction per request, so:
 
-## Modules the entrypoint looks for
-`app.domain.sports`, `scoring`, `fixtures`, `leagues`, `standings`. Optional routers
-`app.api.domain_audit` (audit routes) and `app.api.domain_mobile` (`/api/v1` routes) export `router`
-and are mounted automatically when present. A missing scoring module yields 501 `NOT_IMPLEMENTED`.
+- `app/core/sa.py` binds a Session to that very connection through a DBAPI proxy (SQLAlchemy never
+  commits/rolls back/closes it). Everything in a request - events, offline sync records, reset - is one
+  atomic transaction.
+- `app/domain/bridge.py` is the single adapter: it implements the conn-based port used by the offline
+  coordinator (`get_match_version`, `find_event`, `append_event`, `match_league_id`, `reset`) and the
+  HTTP-facing calls. Domain `DomainError`s are translated to the platform error shape.
+- Routes: `app/api/domain_audit.py` (`/audit/v1/{sports,fixtures,leagues,events,score,standings}`) and
+  `app/api/domain_mobile.py` (`/api/v1/{matches/{id},matches/{id}/events,leagues/{id}/standings,fixtures/preview}`),
+  auto-mounted by `app/main.py`. Realtime `score_updated` is pushed to `/ws/v1/matches/{id}` after commit.
+- Migrations: `001_platform.sql` (platform) then `101_fatima_domain.sql` (domain tables, `domain_` prefix).
+  Reset truncates platform tables, then `bridge.reset` -> `seeds.reset_domain` re-creates the sports.
 
-## `app.domain.scoring` (used by the offline coordinator and reset)
-| function | contract |
-| --- | --- |
-| `get_match_version(conn, match_id) -> int \| None` | event count; `None` if the match is unknown |
-| `find_event(conn, event_id) -> dict \| None` | the originally stored request body, for duplicate vs conflict |
-| `append_event(conn, body) -> ("new"\|"replay", response)` | raises `DomainError` for rule failures; no commit inside |
-| `match_league_id(conn, match_id)` (optional) | tenant scoping of production offline sync |
-| `reset(conn, seed)` (optional) | clear your tables; called inside the reset transaction |
-
-All functions take the caller's open psycopg connection (`dict_row`); never commit. Signatures come from
-`app.core.signing.sign_record(id, payload)`. Errors: `app.core.errors.DomainError(status, code, message, details)`.
-
-## Migrations
-Platform owns `001_platform.sql` (creates the shared `sports` table). Domain owner adds `1xx_*.sql` files
-in `backend/migrations/`; they run in filename order once. `TRUNCATE ... CASCADE` in reset also clears
-dependent domain tables.
+Known gaps: `domain_outbox` rows are written but not relayed (score realtime is pushed inline instead);
+`scheduling.py` product services (conflicts, rescheduling, promotion/relegation) are tested as services
+but have no mounted HTTP endpoints.

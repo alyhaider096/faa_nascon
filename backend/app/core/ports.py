@@ -1,7 +1,7 @@
 """Frozen integration points between platform code and the scoring/standings/fixtures owner.
 
 Platform code never re-implements those domains. It looks for these functions in the module
-`app.domain.scoring` (or an injected port in tests). All of them receive the *caller's* open
+`app.domain.bridge` (adapter over the scoring module; or an injected port in tests). All of them receive the *caller's* open
 psycopg connection, so nothing here commits: the offline coordinator owns the transaction and
 savepoint boundaries.
 
@@ -31,11 +31,7 @@ from .errors import DomainError
 _scoring_override: Any = None
 
 RESET_HOOK_MODULES = (
-    "app.domain.sports",
-    "app.domain.scoring",
-    "app.domain.fixtures",
-    "app.domain.leagues",
-    "app.domain.standings",
+    "app.domain.bridge",
 )
 
 
@@ -49,7 +45,7 @@ def scoring() -> Any:
     if _scoring_override is not None:
         return _scoring_override
     try:
-        return importlib.import_module("app.domain.scoring")
+        return importlib.import_module("app.domain.bridge")
     except ModuleNotFoundError:
         raise DomainError(
             501, "NOT_IMPLEMENTED",

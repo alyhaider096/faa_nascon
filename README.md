@@ -30,7 +30,7 @@ Services: `db`, `redis`, `api` (FastAPI, single worker so the in-memory rate lim
 
 Demo users (published, password `Nascon@26`): `admin@nascon.test` (super_admin), `organizer@nascon.test` (league_organizer, league-alpha-1), `manager@nascon.test` (club_manager, club-alpha-1), `player@nascon.test` (player, player-alpha-1), `viewer@nascon.test` (viewer).
 
-Mobile API: `POST /api/v1/auth/login`, then `Authorization: Bearer <token>` on `/api/v1/{me,bootstrap,clubs/{id},products,checkout,orders/{id},orders/{id}/status,matches/{id}/pin,matches/{id}/pinned,roster/transfer,roster/history/{player},offline-sync}`; realtime at `ws://<host>:8080/ws/v1/matches/{match_id}?token=<jwt>`. Fixtures, standings and match reads depend on the sports/scoring modules (see [docs/INTERFACES.md](docs/INTERFACES.md)).
+Mobile API: `POST /api/v1/auth/login`, then `Authorization: Bearer <token>` on `/api/v1/{me,bootstrap,clubs/{id},products,checkout,orders/{id},orders/{id}/status,matches/{id}/pin,matches/{id}/pinned,roster/transfer,roster/history/{player},offline-sync}`; realtime at `ws://<host>:8080/ws/v1/matches/{match_id}?token=<jwt>`. Domain reads/writes: `GET /api/v1/matches/{id}`, `POST /api/v1/matches/{id}/events` (organizer/admin), `GET /api/v1/leagues/{id}/standings`, `POST /api/v1/fixtures/preview`. See [docs/INTERFACES.md](docs/INTERFACES.md). Audit routes live under `/audit/v1/*`.
 
 ## Tests
 
@@ -38,7 +38,7 @@ Mobile API: `POST /api/v1/auth/login`, then `Authorization: Bearer <token>` on `
 TEST_DATABASE_URL=postgresql://user:pw@127.0.0.1:5432/throwaway ./run_tests.sh
 ```
 
-Needs a throwaway PostgreSQL 16 and a Redis (`TEST_REDIS_URL`). Tests use only the public salt `demo-salt`. The script exits non-zero on failure and rewrites `COVERAGE.json` from measured line coverage; areas whose source does not exist are reported as 0.0.
+Needs a throwaway PostgreSQL 16 and a Redis (`TEST_REDIS_URL`); optionally `DOMAIN_TEST_DATABASE_URL=postgresql+psycopg://.../other_db` enables the domain concurrency tests. Tests use only the public salt `demo-salt`. The script exits non-zero on failure and rewrites `COVERAGE.json` from measured line coverage; areas whose source does not exist are reported as 0.0.
 
 ## Backend handoff
 
