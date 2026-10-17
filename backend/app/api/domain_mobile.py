@@ -39,7 +39,9 @@ def match_detail(match_id: str, request: Request):
         league_id = bridge.match_league_id(conn, match_id)
         if league_id is not None:
             _league_scope(conn, claims, league_id)
-        return bridge.project_score(conn, match_id)
+        projection = bridge.project_score(conn, match_id)
+        projection["scoring_events"] = bridge.match_scoring_events(conn, match_id) or {}
+        return projection
 
 
 @router.post("/fixtures/preview")

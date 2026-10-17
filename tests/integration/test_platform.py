@@ -98,6 +98,65 @@ def test_me_and_bootstrap(client, reset):
     assert len(adm["leagues"]) >= len(bs["leagues"]) and adm["capabilities"]["can_score"]
 
 
+def _live_mobile_graph(client):
+    viewer = auth(token(client, "viewer@nascon.test"))
+    bootstrap = client.get("/api/v1/bootstrap", headers=viewer).json()
+
+    for league in bootstrap["leagues"]:
+        response = client.get(f"/api/v1/leagues/{league['league_id']}/standings", headers=viewer)
+        assert response.status_code == 200, response.text
+    for club in bootstrap["clubs"]:
+        response = client.get(f"/api/v1/clubs/{club['club_id']}", headers=viewer)
+        assert response.status_code == 200, response.text
+
+    listed = client.get("/api/v1/fixtures", headers=viewer).json()["fixtures"]
+    assert bootstrap["fixtures"] == listed
+    assert [fixture["match_id"] for fixture in listed] == ["match-001"]
+    fixture = listed[0]
+    assert fixture["home_squad_id"] == "squad-alpha-1"
+    assert fixture["away_squad_id"] == "squad-alpha-2"
+    assert fixture["home_player_ids"] == ["player-alpha-1"]
+    assert fixture["away_player_ids"] == ["player-alpha-2"]
+    assert fixture["pinned_product_id"] == "prod-jersey-001"
+
+    match = client.get(f"/api/v1/matches/{fixture['match_id']}", headers=viewer)
+    assert match.status_code == 200, match.text
+    projection = match.json()
+    assert projection["status"] == "in_progress" and projection["version"] == 4
+    assert projection["home"]["score"] == 2 and projection["away"]["score"] == 1
+    assert [event["event_id"] for event in projection["events"]] == [
+        "match-001-start", "match-001-goal-home-1", "match-001-goal-away-1", "match-001-goal-home-2",
+    ]
+    assert projection["scoring_events"] == {"goal": {"points": 1}}
+    pinned = client.get(f"/api/v1/matches/{fixture['match_id']}/pinned", headers=viewer).json()
+    assert pinned["product"]["product_id"] == fixture["pinned_product_id"]
+
+    for player_id, squad_id in (("player-alpha-1", "squad-alpha-1"),
+                                 ("player-alpha-2", "squad-alpha-2")):
+        history = client.get(f"/api/v1/roster/history/{player_id}", headers=viewer)
+        assert history.status_code == 200, history.text
+        assert history.json()["current_squad_id"] == squad_id
+
+    admin = auth(token(client, "admin@nascon.test"))
+    admin_bootstrap = client.get("/api/v1/bootstrap", headers=admin).json()
+    for league in admin_bootstrap["leagues"]:
+        assert client.get(f"/api/v1/leagues/{league['league_id']}/standings", headers=admin).status_code == 200
+    for club in admin_bootstrap["clubs"]:
+        assert client.get(f"/api/v1/clubs/{club['club_id']}", headers=admin).status_code == 200
+    return {"bootstrap": bootstrap, "match": projection, "pinned": pinned}
+
+
+def test_reset_restores_complete_mobile_graph(client, reset):
+    # Keep this deliberately request-heavy integration walk on its own loopback identity so it
+    # does not consume the shared client's rate-limit budget used by subsequent contract tests.
+    transport = httpx.HTTPTransport(local_address="127.0.0.2")
+    with httpx.Client(base_url=client.base_url, timeout=30, transport=transport) as isolated:
+        first = _live_mobile_graph(isolated)
+        response = isolated.post("/audit/v1/reset", json={"seed": 42})
+        assert response.status_code == 200, response.text
+        assert _live_mobile_graph(isolated) == first
+
+
 def test_club_profile_scope_and_404(client, reset):
     h = auth(token(client, "viewer@nascon.test"))
     ok = client.get("/api/v1/clubs/club-alpha-1", headers=h)

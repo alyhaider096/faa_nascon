@@ -16,15 +16,17 @@ def _auth(token: str) -> dict[str, str]:
 
 def test_foreign_tenant_match_detail_is_forbidden(client, reset):
     response = client.post(
-        "/audit/v1/leagues",
+        "/audit/v1/events",
         json={
-            "league_id": "league-beta-1",
-            "sport_id": "football",
-            "teams": ["beta-a", "beta-b"],
-            "fixtures": [
-                {"match_id": "match-beta-private", "home": "beta-a", "away": "beta-b"}
-            ],
-            "qualification": {"spots": 1},
+            "event_id": "match-beta-private-init",
+            "match_id": "match-beta-private",
+            "type": "match_init",
+            "payload": {
+                "sport_id": "football",
+                "home_team_id": "beta-a",
+                "away_team_id": "beta-b",
+                "league_id": "league-beta-1",
+            },
         },
     )
     assert response.status_code == 201, response.text

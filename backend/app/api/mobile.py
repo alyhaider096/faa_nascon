@@ -11,7 +11,7 @@ from ..core.errors import DomainError, validation_error
 from ..core.security import (Claims, authenticate, claims_public, forbidden, is_super, issue_token,
                              verify_password)
 from ..core.validation import Fields, is_id, read_json_object
-from ..domain import offline, roster, store
+from ..domain import bridge, offline, roster, store
 from .common import run_tx
 
 router = APIRouter(prefix="/api/v1")
@@ -82,8 +82,62 @@ def bootstrap(request: Request):
             "SELECT club_id, tenant_id, name FROM ref_clubs WHERE (%s::text IS NULL OR tenant_id=%s)"
             " ORDER BY club_id", (scope, scope)).fetchall()
         products = store.list_products(conn, scope)
+        fixtures = _fixture_list(conn, [league["league_id"] for league in leagues])
     return {"user": _user_json(user), "tenant": tenant, "leagues": leagues, "clubs": clubs,
-            "products": products, "capabilities": _capabilities(claims)}
+            "products": products, "fixtures": fixtures, "capabilities": _capabilities(claims)}
+
+
+def _fixture_list(conn, league_ids: list[str]) -> list[dict]:
+    fixtures = bridge.list_matches(conn, league_ids)
+    if not fixtures:
+        return []
+    match_ids = [fixture["match_id"] for fixture in fixtures]
+    roster_rows = conn.execute(
+        "SELECT match_id, home_squad_id, away_squad_id FROM roster_matches WHERE match_id = ANY(%s)",
+        (match_ids,),
+    ).fetchall()
+    roster_by_match = {row["match_id"]: row for row in roster_rows}
+    squad_ids = [row[key] for row in roster_rows for key in ("home_squad_id", "away_squad_id")]
+    players_by_squad: dict[str, list[str]] = {squad_id: [] for squad_id in squad_ids}
+    if squad_ids:
+        player_rows = conn.execute(
+            "SELECT player_id, squad_id FROM roster_players WHERE squad_id = ANY(%s)"
+            " ORDER BY squad_id, player_id", (squad_ids,),
+        ).fetchall()
+        for player in player_rows:
+            players_by_squad[player["squad_id"]].append(player["player_id"])
+    pins = conn.execute(
+        "SELECT product_id, pinned_match_id FROM products WHERE active=true AND pinned_match_id = ANY(%s)",
+        (match_ids,),
+    ).fetchall()
+    pinned_by_match = {row["pinned_match_id"]: row["product_id"] for row in pins}
+
+    output = []
+    for fixture in fixtures:
+        roster_match = roster_by_match.get(fixture["match_id"])
+        home_squad = roster_match["home_squad_id"] if roster_match else None
+        away_squad = roster_match["away_squad_id"] if roster_match else None
+        output.append({
+            **fixture,
+            "home_squad_id": home_squad,
+            "away_squad_id": away_squad,
+            "home_player_ids": players_by_squad.get(home_squad, []),
+            "away_player_ids": players_by_squad.get(away_squad, []),
+            "pinned_product_id": pinned_by_match.get(fixture["match_id"]),
+        })
+    return output
+
+
+@router.get("/fixtures")
+def fixture_list(request: Request):
+    claims = authenticate(request)
+    with tx() as conn:
+        scope = None if is_super(claims) else claims.tenant_id
+        rows = conn.execute(
+            "SELECT league_id FROM ref_leagues WHERE (%s::text IS NULL OR tenant_id=%s) ORDER BY league_id",
+            (scope, scope),
+        ).fetchall()
+        return {"fixtures": _fixture_list(conn, [row["league_id"] for row in rows])}
 
 
 def _capabilities(c: Claims) -> dict:
@@ -103,8 +157,14 @@ def club_profile(club_id: str, request: Request):
         if not is_super(claims) and claims.tenant_id != club["tenant_id"]:
             raise forbidden()
         players = conn.execute(
-            "SELECT player_id, name FROM ref_players WHERE club_id=%s ORDER BY player_id", (club_id,)).fetchall()
-    return {**club, "roster": players}
+            "SELECT p.player_id, p.name, rp.league_id, rp.squad_id, rp.position, rp.role"
+            " FROM ref_players p LEFT JOIN roster_players rp ON rp.player_id=p.player_id"
+            " WHERE p.club_id=%s ORDER BY p.player_id", (club_id,)).fetchall()
+        squads = conn.execute(
+            "SELECT squad_id, league_id, name FROM roster_squads WHERE club_id=%s ORDER BY squad_id",
+            (club_id,),
+        ).fetchall()
+    return {**club, "squads": squads, "roster": players}
 
 
 # ----------------------------------------------------------------------------- store --------

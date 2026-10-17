@@ -20,6 +20,7 @@ DEFAULT_STOCK = {"var-jersey-001-M": 1, "var-jersey-001-L": 5}
 RESET_LOCK = 7002
 DEMO_PASSWORD = "Nascon@26"
 FULL_TIE_BREAK = ["h2h_points", "h2h_diff", "overall_diff", "scored", "fair_play", "draw_lots"]
+LIVE_MATCH_ID = "match-001"
 
 SPORTS: list[tuple[str, str, dict]] = [
     ("football", "Football", {
@@ -84,6 +85,47 @@ CLUBS = [
 PLAYERS = [("player-alpha-1", "club-alpha-1", "tenant-alpha", "Alpha Player One"),
            ("player-alpha-2", "club-alpha-2", "tenant-alpha", "Alpha Player Two"),
            ("player-beta-1", "club-beta-1", "tenant-beta", "Beta Player One")]
+
+# The mobile demo follows these IDs from bootstrap -> standings/match/club -> roster history.
+# Keep them deterministic so /reset always restores the same navigable live-data graph.
+DOMAIN_LEAGUES = [
+    {
+        "league_id": "league-alpha-1", "sport_id": "football",
+        "teams": ["club-alpha-1", "club-alpha-2"],
+        "fixtures": [{"match_id": LIVE_MATCH_ID, "home": "club-alpha-1", "away": "club-alpha-2"}],
+    },
+    {
+        "league_id": "league-alpha-2", "sport_id": "football",
+        "teams": ["club-alpha-1", "club-alpha-2"], "fixtures": [],
+    },
+    {
+        "league_id": "league-beta-1", "sport_id": "football",
+        "teams": ["club-beta-1", "club-beta-guest"], "fixtures": [],
+    },
+]
+
+ROSTER_BASELINE = {
+    "league": {
+        "league_id": "league-alpha-1", "tenant_id": "tenant-alpha", "sport_id": "football",
+        "transfer_window": {"open": "2020-01-01", "close": "2099-12-31"},
+        "required_positions": {},
+    },
+    "squads": [
+        {"squad_id": "squad-alpha-1", "club_id": "club-alpha-1", "tenant_id": "tenant-alpha",
+         "name": "Alpha FC First Team"},
+        {"squad_id": "squad-alpha-2", "club_id": "club-alpha-2", "tenant_id": "tenant-alpha",
+         "name": "Alpha United First Team"},
+    ],
+    "players": [
+        {"player_id": "player-alpha-1", "name": "Alpha Player One", "position": "forward",
+         "squad_id": "squad-alpha-1", "role": "captain"},
+        {"player_id": "player-alpha-2", "name": "Alpha Player Two", "position": "defender",
+         "squad_id": "squad-alpha-2", "role": "captain"},
+    ],
+    "matches_in_progress": [
+        {"match_id": LIVE_MATCH_ID, "home_squad_id": "squad-alpha-1", "away_squad_id": "squad-alpha-2"},
+    ],
+}
 
 # (user_id, email, role, display_name, tenant, league, club, player)
 USERS = [
@@ -176,11 +218,41 @@ def reset(conn, seed: int = DEFAULT_SEED, stock: dict[str, int] | None = None) -
 
     conn.execute("INSERT INTO seed_state (id, seed) VALUES (1, %s)", (seed,))
     hooks = ports.run_reset_hooks(conn, seed)       # scoring/standings owners clear their own state
+    _seed_mobile_graph(conn, seed)
     return {
         "status": "reset_complete", "seed": seed, "sports": [s[0] for s in SPORTS],
         "tenants": [t[0] for t in TENANTS], "stock": {k: stock[k] for k in DEFAULT_STOCK},
         "_hooks": hooks,
     }
+
+
+def _seed_mobile_graph(conn, seed: int) -> None:
+    """Restore the connected records exercised by the live mobile judging flows."""
+    domain = ports.scoring()
+    register = getattr(domain, "register_league", None)
+    append = getattr(domain, "append_event", None)
+    if not callable(register) or not callable(append):
+        return
+
+    for league in DOMAIN_LEAGUES:
+        register(conn, {
+            **league,
+            "points": {"win": 3, "draw": 1, "loss": 0},
+            "qualification": {"spots": 1},
+            "lots_seed": seed,
+        })
+
+    for event_id, type_, payload in (
+        ("match-001-start", "match_start", {}),
+        ("match-001-goal-home-1", "score", {"team_id": "club-alpha-1", "event_type": "goal"}),
+        ("match-001-goal-away-1", "score", {"team_id": "club-alpha-2", "event_type": "goal"}),
+        ("match-001-goal-home-2", "score", {"team_id": "club-alpha-1", "event_type": "goal"}),
+    ):
+        append(conn, {"event_id": event_id, "match_id": LIVE_MATCH_ID, "type": type_, "payload": payload})
+
+    from . import roster
+    roster.setup(conn, ROSTER_BASELINE)
+    conn.execute("UPDATE products SET pinned_match_id=%s WHERE product_id='prod-jersey-001'", (LIVE_MATCH_ID,))
 
 
 def is_seeded(conn) -> bool:

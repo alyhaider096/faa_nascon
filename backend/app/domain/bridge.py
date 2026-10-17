@@ -5,6 +5,8 @@ This module is the one place that knows both worlds; it satisfies the frozen por
 """
 from __future__ import annotations
 
+from sqlalchemy import select
+
 from ..core import sa
 from ..core.errors import DomainError
 from ..core.signing import sign_record
@@ -14,7 +16,7 @@ from . import scoring as _scoring
 from . import seeds as _seeds
 from . import sports as _sports
 from . import standings as _standings
-from .models import Event, Match
+from .models import Event, Match, Sport
 
 
 def _translate(fn, *args, **kwargs):
@@ -42,6 +44,26 @@ def match_league_id(conn, match_id):
     with sa.session(conn) as s:
         m = s.get(Match, match_id)
         return None if m is None else m.league_id
+
+
+def list_matches(conn, league_ids):
+    """Return persisted fixture identities for the leagues visible to a mobile caller."""
+    if not league_ids:
+        return []
+    with sa.session(conn) as s:
+        rows = s.scalars(select(Match).where(Match.league_id.in_(league_ids)).order_by(Match.id)).all()
+        return [{"match_id": m.id, "league_id": m.league_id, "sport_id": m.sport_id,
+                 "home_team_id": m.home, "away_team_id": m.away} for m in rows]
+
+
+def match_scoring_events(conn, match_id):
+    """Expose scoring choices without changing the exact audit score projection."""
+    with sa.session(conn) as s:
+        match = s.get(Match, match_id)
+        if match is None:
+            return None
+        sport = s.get(Sport, match.sport_id)
+        return dict((sport.config or {}).get("scoring_events", {})) if sport is not None else {}
 
 
 def append_event(conn, body):
