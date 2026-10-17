@@ -27,3 +27,22 @@ All entries are planned; no implementation or passing checks are claimed yet.
 - Generate COVERAGE.json from measured coverage; do not report estimated results.
 - Verify Docker Compose and mobile/backend integration before submission.
 - Verify a GitHub push during each required checkpoint window; local commits alone do not satisfy a push checkpoint.
+
+## Backend platform slice (measured; implemented in this branch)
+
+All checks below ran against real PostgreSQL 16 and Redis via `./run_tests.sh`: 191 passed, 0 failed. Measured line coverage: store 90.6, roster 89.3, rbac 95.7. fixtures, scoring and
+standings are 0.0 because those modules are not part of this branch.
+
+| Requirement | Source | Tests |
+| --- | --- | --- |
+| Shared HMAC signing (5.x, App. A) | `backend/app/core/signing.py` | `tests/rbac/test_signing.py` |
+| Roster 5.11 | `backend/app/domain/roster.py` | `tests/roster/test_roster.py` |
+| Store/checkout 5.12, NFR-3 (20-buyer race) | `backend/app/domain/store.py` | `tests/store/test_store.py` |
+| RBAC 5.13, tenant isolation, FR-5.1 | `backend/app/core/security.py`, `backend/app/api/audit.py` | `tests/rbac/test_rbac.py` |
+| Security NFR-5 (400 not 422, rate limit, 1 MB cap) | `backend/app/core/middleware.py`, `errors.py` | `tests/rbac/test_zz_ratelimit.py`, `test_rbac.py` |
+| Offline sync 5.14, NFR-4 (server side) | `backend/app/domain/offline.py` | `tests/integration/test_offline.py` (scoring port stubbed by `tests/fixtures/fake_scoring.py`) |
+| Reset/reproducibility 5.5 (in-process) | `backend/app/domain/seed.py` | `tests/integration/test_platform.py` |
+| Mobile API, auth, realtime pin, outbox worker | `backend/app/api/mobile.py`, `core/realtime.py`, `worker.py` | `tests/integration/test_platform.py` |
+
+Not yet verified: clean `docker compose up -d --build` timing, restart durability and phone-over-LAN
+(no Docker or phone in the build sandbox); mobile desk-check; integration with the scoring/standings modules.

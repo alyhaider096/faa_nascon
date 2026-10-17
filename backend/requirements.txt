@@ -1,0 +1,12 @@
+fastapi==0.143.3
+starlette==1.6.0
+pydantic==2.13.5
+uvicorn==0.53.0
+websockets==17.2
+psycopg[binary,pool]==3.3.6
+psycopg-pool==3.3.3
+PyJWT==2.14.0
+reportlab==5.0.1
+pillow==12.3.0
+charset-normalizer==3.5.1
+redis==8.1.0
