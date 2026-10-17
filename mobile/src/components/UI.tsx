@@ -47,7 +47,7 @@ export function SectionTitle({ title, action }: { title: string; action?: string
 export function Muted({ children }: { children: React.ReactNode }) { return <Text style={styles.muted}>{children}</Text>; }
 
 const styles = StyleSheet.create({
-  page: { flexGrow: 1, backgroundColor: C.bg, paddingHorizontal: 20, paddingTop: 25, paddingBottom: 40 },
+  page: { flexGrow: 1, backgroundColor: C.bg, paddingHorizontal: 20, paddingTop: 25, paddingBottom: 110 },
   pageTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 8 },
   eyebrow: { color: C.accent, letterSpacing: 1.5, fontWeight: '800', fontSize: 11, flexShrink: 1 },
   tenantBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: '48%', flexShrink: 1 },
@@ -55,14 +55,14 @@ const styles = StyleSheet.create({
   tenantName: { color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: .6, flexShrink: 1 },
   title: { color: C.text, fontSize: 36, fontWeight: '900', fontFamily: DISPLAY_FONT, letterSpacing: -.7, marginBottom: 6, textTransform: 'uppercase' },
   subtitle: { color: C.muted, fontSize: 15, lineHeight: 22, marginBottom: 24 },
-  card: { backgroundColor: C.surface, borderColor: C.line, borderWidth: 1, borderRadius: 12, padding: 16, marginBottom: 10 },
-  accentCard: { backgroundColor: C.surface2, borderColor: C.accentDark },
+  card: { backgroundColor: C.surface, borderRadius: 12, padding: 16, marginBottom: 10 },
+  accentCard: { backgroundColor: C.surface2 },
   button: { backgroundColor: C.accent, minHeight: 52, paddingHorizontal: 18, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginVertical: 6 },
-  secondaryButton: { backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line },
+  secondaryButton: { backgroundColor: C.surface2 },
   dangerButton: { backgroundColor: C.danger },
   buttonText: { color: C.bg, fontSize: 15, fontWeight: '800' },
   label: { color: C.muted, fontSize: 12, fontWeight: '700', marginBottom: 7, textTransform: 'uppercase', letterSpacing: .8 },
-  input: { backgroundColor: C.surface, borderColor: C.line, borderWidth: 1, borderRadius: 11, color: C.text, minHeight: 50, paddingHorizontal: 14, fontSize: 16 },
+  input: { backgroundColor: C.surface2, borderRadius: 11, color: C.text, minHeight: 50, paddingHorizontal: 14, fontSize: 16 },
   pill: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 50 },
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 19, marginBottom: 12 },
   sectionTitle: { color: C.text, fontSize: 21, fontWeight: '900', fontFamily: DISPLAY_FONT, textTransform: 'uppercase' }, sectionAction: { color: C.accent, fontSize: 12, fontWeight: '700' },
