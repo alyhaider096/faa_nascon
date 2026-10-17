@@ -1,0 +1,37 @@
+{
+  "test_result": "156 passed",
+  "environment": "Windows Python 3.12.14; PostgreSQL 16 alpine in disposable Docker container",
+  "command": "DOMAIN_TEST_DATABASE_URL=<disposable-postgres-url> python -m pytest tests/domain -q -p no:cacheprovider --cov=backend.app.domain --cov-report=term-missing --cov-report=json:domain-coverage.json",
+  "overall_line_percent": 91.37214137214137,
+  "area_measurements": {
+    "fixtures": {
+      "covered_lines": 414,
+      "statements": 470,
+      "line_percent": 88.09,
+      "modules": [
+        "fixtures.py",
+        "scheduling.py"
+      ]
+    },
+    "scoring": {
+      "covered_lines": 290,
+      "statements": 314,
+      "line_percent": 92.36,
+      "modules": [
+        "scoring.py",
+        "sports.py",
+        "common.py",
+        "seeds.py"
+      ]
+    },
+    "standings": {
+      "covered_lines": 83,
+      "statements": 84,
+      "line_percent": 98.81,
+      "modules": [
+        "standings.py"
+      ]
+    }
+  },
+  "scope": "Domain suite only. Not six-area root COVERAGE.json; store/roster/rbac and full app integration not assessed."
+}
