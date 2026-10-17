@@ -89,7 +89,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [selectedLeague, setSelectedLeague] = useState('');
   const [loading, setLoading] = useState(false);
   const [dataError, setDataError] = useState('');
-  const [online, setOnline] = useState(true);
+  const [networkConnected, setNetworkConnected] = useState(true);
+  const [serverHealthy, setServerHealthy] = useState(false);
+  const online = networkConnected && (demoMode || serverHealthy);
   const [syncing, setSyncing] = useState(false);
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [standings, setStandings] = useState<typeof STANDINGS>([]);
@@ -116,9 +118,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setReady(true);
     })().catch(() => setReady(true));
     // A hotspot can reach the local API without public internet access.
-    const subscription = NetInfo.addEventListener(state => setOnline(Boolean(state.isConnected)));
+    const subscription = NetInfo.addEventListener(state => setNetworkConnected(Boolean(state.isConnected)));
     return () => { active = false; subscription(); };
   }, []);
+
+  useEffect(() => {
+    if (demoMode || !networkConnected) { setServerHealthy(false); return; }
+    let active = true;
+    let probing = false;
+    const probe = async () => {
+      if (probing) return;
+      probing = true;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 4000);
+      try {
+        const response = await fetch(`${serverUrl.replace(/\/$/, '')}/health`, { signal: controller.signal });
+        if (active) setServerHealthy(response.ok);
+      } catch {
+        if (active) setServerHealthy(false);
+      } finally {
+        clearTimeout(timeout);
+        probing = false;
+      }
+    };
+    setServerHealthy(false);
+    void probe();
+    const interval = setInterval(() => { void probe(); }, 10000);
+    return () => { active = false; clearInterval(interval); };
+  }, [demoMode, networkConnected, serverUrl]);
 
   const login = useCallback(async (email: string, password: string) => {
     if (!demoMode) {
