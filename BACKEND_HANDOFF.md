@@ -28,6 +28,13 @@ The official Part I specification is the binding contract. This note is a short 
 - Only `score_event` and `roster_transfer` are valid queue types. The latter wraps transfer/loan/release bodies from `/audit/v1/roster/transfer`; add-player UI needs a separate normal API because it is not a Section 5.14 queue action.
 - Return per-action applied, duplicate or rejected status with exact resolution/error fields; conflicts must not turn the whole envelope into a failure. The mobile app must show plain-language reasons and leave rejected results visible.
 
+## Current mobile integration contract
+
+- The phone's base URL is editable in Settings and must be the backend laptop's LAN address with port 8080. Live mode currently calls `POST /audit/v1/checkout` and `POST /audit/v1/offline-sync` with the exact Section 5 envelopes; these are the first integration targets.
+- Live add-player currently proposes `POST /api/v1/roster/players` with `{name, position, number}`. This route is **not** mandated by the audit spec. Confirm or replace the path and body with the backend team before claiming live registration works.
+- Fixture, standings, club and product reads still use clearly labelled local preview data and SQLite cache. Agree normal `/api/v1/*` read routes and response models with the mobile team, then wire them to the cache. The audit routes alone do not provide the complete screen read model.
+- Login currently selects a demo role on-device; it is not backend authentication. The backend must expose and document its normal login route and JWT response for a true live session. The phone uses SecureStore, but server-side RBAC must never trust the phone's role label.
+
 ## Before submission
 
 Run the reference signature vector, reset-twice comparison, mystery-sport test, and 20-buyer checkout burst. Add the actual implementation/test paths to `TRACEABILITY.md`; generate `COVERAGE.json` from measured coverage only. Commit the clean-start Compose files and the built `mobile/release/app-release.apk` before the final push deadline.

@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Text } from 'react-native';
 import { Button, Card, Muted, Page, Pill, SectionTitle } from '../../components/UI';
 import { MatchCard } from '../../components/MatchCard';
 import { canScore, useApp } from '../../state/AppContext';

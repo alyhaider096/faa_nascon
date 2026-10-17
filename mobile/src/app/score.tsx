@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Text } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { Button, Card, Field, Muted, Page, Pill } from '../components/UI';
 import { canScore, useApp } from '../state/AppContext';
 import { C } from '../theme';
@@ -23,9 +23,14 @@ export default function Score() {
   }
   return <Page eyebrow="League organizer tools" title="Scoring entry" subtitle={`Match ${id ?? ''} · append-only event log`}>
     <Card accent><Pill text={online ? 'CONNECTED' : 'OFFLINE · QUEUE ACTIVE'} tone={online ? 'mint' : 'gold'} /><Text style={{ color: C.text, fontWeight: '800', marginTop: 12 }}>Every correction creates a new event.</Text><Muted>The backend signs each accepted event with the team salt.</Muted></Card>
-    <Field label="Team ID" value={team} onChangeText={setTeam} />
-    <Field label="Scoring event type" value={eventType} onChangeText={setEventType} placeholder="From sport configuration" />
-    <Muted>Configured event types: {fixture?.eventTypes.join(', ') || 'Load a match to see its options.'}</Muted>
+    <Text style={{ color: C.text, fontSize: 18, fontWeight: '800', marginBottom: 10 }}>Which team?</Text>
+    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+      {fixture ? [{ id: fixture.homeId, label: fixture.home }, { id: fixture.awayId, label: fixture.away }].map(option => <Pressable key={option.id} onPress={() => setTeam(option.id)} accessibilityRole="button" accessibilityState={{ selected: team === option.id }} style={{ flex: 1, minHeight: 54, padding: 10, justifyContent: 'center', borderRadius: 12, borderWidth: 1, backgroundColor: team === option.id ? C.surface2 : C.surface, borderColor: team === option.id ? C.accent : C.line }}><Text numberOfLines={2} style={{ color: team === option.id ? C.accent : C.text, fontWeight: '800', textAlign: 'center' }}>{option.label}</Text></Pressable>) : <Muted>Open a match first to choose its teams.</Muted>}
+    </View>
+    <Text style={{ color: C.text, fontSize: 18, fontWeight: '800', marginBottom: 10 }}>What happened?</Text>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 15 }}>
+      {fixture?.eventTypes.map(value => <Pressable key={value} onPress={() => setEventType(value)} accessibilityRole="button" accessibilityState={{ selected: eventType === value }} style={{ minHeight: 48, paddingHorizontal: 14, borderRadius: 24, borderWidth: 1, borderColor: eventType === value ? C.accent : C.line, backgroundColor: eventType === value ? C.surface2 : C.surface, justifyContent: 'center' }}><Text style={{ color: eventType === value ? C.accent : C.text, fontWeight: '700' }}>{value.replaceAll('_', ' ')}</Text></Pressable>)}
+    </View>
     <Button title="Add scoring event" onPress={() => void submit(false)} />
     <Text style={{ color: C.text, fontSize: 18, fontWeight: '800', marginTop: 23, marginBottom: 10 }}>Correct an event</Text>
     <Field label="Event ID to compensate" value={compensates} onChangeText={setCompensates} placeholder="evt-..." />

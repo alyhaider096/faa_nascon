@@ -2,6 +2,8 @@ import { Stack, router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppMark } from '../components/UI';
 import { SyncBar } from '../components/SyncBar';
 import { AppProvider, useApp } from '../state/AppContext';
 import { C } from '../theme';
@@ -14,10 +16,10 @@ function Shell() {
     if (!account && path !== '/login' && path !== '/settings') router.replace('/login');
     else if (account && (path === '/' || path === '/login')) router.replace('/(tabs)/fixtures');
   }, [account, path, ready]);
-  if (!ready) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg }}><Text style={{ color: C.text, fontSize: 29, fontWeight: '800', marginBottom: 20 }}>LeagueOps</Text><ActivityIndicator size="large" color={C.accent} /><Text style={{ color: C.muted, marginTop: 16 }}>Opening your league…</Text></View>;
+  if (!ready) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg }}><AppMark size={92} /><Text style={{ color: C.text, fontSize: 29, fontWeight: '800', marginBottom: 20 }}>LeagueOps</Text><ActivityIndicator size="large" color={C.accent} /><Text style={{ color: C.muted, marginTop: 16 }}>Opening your league…</Text></View>;
   return <View style={{ flex: 1, backgroundColor: C.bg }}>
     <StatusBar style="light" />
-    <SyncBar />
+    <SafeAreaView edges={['top']} style={{ backgroundColor: C.surface2 }}><SyncBar /></SafeAreaView>
     <Stack screenOptions={{ headerStyle: { backgroundColor: C.bg }, headerTintColor: C.text, headerTitleStyle: { fontWeight: '700' }, contentStyle: { backgroundColor: C.bg } }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />

@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { BrandMark, Button, Card, Field, Muted, Page, Pill } from '../components/UI';
+import { AppMark, Button, Card, Field, Muted, Page, Pill } from '../components/UI';
 import { ACCOUNTS, DEMO_PASSWORD } from '../data/mock';
 import { useApp } from '../state/AppContext';
 import { C } from '../theme';
@@ -13,7 +13,7 @@ export default function Login() {
   const [error, setError] = useState('');
   async function submit() { const problem = await login(email, password); if (problem) setError(problem); else router.replace('/(tabs)/fixtures'); }
   return <Page eyebrow="LeagueOps" title="Sign in" subtitle="Fixtures, standings, club roster, and merchandise.">
-    <Card accent><BrandMark /><Pill text={demoMode ? 'DEMO MODE' : 'LIVE DATA MODE'} /><Text style={{ color: C.text, fontWeight: '800', fontSize: 18, marginTop: 15 }}>Multi-sport league operations</Text><Muted>Choose a demo role below. The backend remains responsible for authorizing live changes.</Muted></Card>
+    <Card accent><AppMark /><Pill text={demoMode ? 'DEMO MODE' : 'LIVE DATA MODE'} /><Text style={{ color: C.text, fontWeight: '800', fontSize: 18, marginTop: 15 }}>Every league. One match centre.</Text><Muted>Sign in to manage fixtures, squads and matchday commerce.</Muted></Card>
     <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" />
     <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry />
     {error ? <Text style={{ color: C.danger, marginBottom: 8 }}>{error}</Text> : null}

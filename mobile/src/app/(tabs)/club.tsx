@@ -12,6 +12,7 @@ export default function Club() {
     <SectionTitle title="First team roster" action={`${club.roster.length} players`} />
     {club.roster.map(p => <Card key={p.number}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 13 }}><Text style={{ color: C.accent, fontSize: 24, fontWeight: '800', width: 32 }}>{p.number}</Text><View><Text style={{ color: C.text, fontSize: 16, fontWeight: '800' }}>{p.name}</Text><Muted>{p.position} · {p.role}</Muted></View></View></Card>)}
     {canManageRoster(account?.role) ? <Button title="Manage roster  →" onPress={() => router.push('/roster')} /> : null}
+    <Button title="App settings" secondary onPress={() => router.push('/settings')} />
     <SectionTitle title="Club staff" />
     <Card>{club.staff.map(s => <Text key={s} style={{ color: C.text, marginVertical: 6 }}>{s}</Text>)}</Card>
     <SectionTitle title="About this club" />

@@ -15,12 +15,14 @@ type AppState = {
   login: (email: string, password: string) => Promise<string | null>; logout: () => Promise<void>;
   setServerUrl: (value: string) => Promise<void>; setDemoMode: (value: boolean) => Promise<void>;
   addToCart: (item: BasketItem) => void; clearCart: () => void; checkout: (token: string, discount: string) => Promise<string | null>;
+  addPlayer: (player: { name: string; position: string; number: number }) => Promise<string | null>;
   queueAction: (action: Omit<PendingAction, 'action_id' | 'queued_at' | 'status'>) => Promise<void>;
   syncQueue: () => Promise<void>; clearResolved: () => Promise<void>; refreshCache: () => Promise<void>;
 };
 
 const Context = createContext<AppState | null>(null);
 const DB_NAME = 'leagueops.db';
+const DEFAULT_SERVER_URL = 'http://192.168.43.1:8080';
 const utcSeconds = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
 const syncExplanation = (code: string | null, status: string) => {
   if (status === 'duplicate') return 'Already received by the server; no second change was made.';
@@ -61,7 +63,7 @@ async function saveAction(action: PendingAction) {
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [account, setAccount] = useState<Account | null>(null);
-  const [serverUrl, setServerUrlState] = useState('http://192.168.43.1:8080');
+  const [serverUrl, setServerUrlState] = useState(DEFAULT_SERVER_URL);
   const [demoMode, setDemoModeState] = useState(true);
   const [online, setOnline] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -72,13 +74,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<BasketItem[]>([]);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const checkoutOrderId = useRef<{ id: string; fingerprint: string } | null>(null);
+  const wasOnline = useRef(false);
 
   useEffect(() => {
     let active = true;
     (async () => {
       await initDatabase();
       const [savedEmail, savedServer, savedDemo, savedFixtures, savedStandings, savedClub, savedQueue] = await Promise.all([
-        SecureStore.getItemAsync('demo_email'), readCache('server_url', serverUrl), readCache('demo_mode', true),
+        SecureStore.getItemAsync('demo_email'), readCache('server_url', DEFAULT_SERVER_URL), readCache('demo_mode', true),
         readCache('fixtures', FIXTURES), readCache('standings', STANDINGS), readCache('club', CLUB), readActions(),
       ]);
       if (!active) return;
@@ -108,10 +111,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return old ? current.map(x => x.variantId === item.variantId ? { ...x, quantity: x.quantity + item.quantity } : x) : [...current, item];
   }); }, []);
   const clearCart = useCallback(() => { checkoutOrderId.current = null; setCart([]); }, []);
+  const addPlayer = useCallback(async (player: { name: string; position: string; number: number }) => {
+    if (club.roster.some(existing => existing.number === player.number)) return 'That shirt number is already taken.';
+    if (!demoMode) {
+      if (!online) return 'Connect to the server to register a new player. Transfers can be queued offline.';
+      try {
+        const response = await fetch(`${serverUrl}/api/v1/roster/players`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(player) });
+        if (!response.ok) return 'The server could not register this player. Please check the roster API.';
+      } catch { return 'Cannot reach the server. The player was not registered.'; }
+    }
+    const updated = { ...club, roster: [...club.roster, { ...player, role: 'Substitute' }] };
+    setClub(updated); await writeCache('club', updated);
+    return null;
+  }, [club, demoMode, online, serverUrl]);
   const checkout = useCallback(async (token: string, discount: string) => {
     if (!cart.length) return 'Add a product before checking out.';
     if (!online) return 'Connect to the server before paying. Your bag is still here.';
-    if (demoMode && token !== 'tok_success') return token === 'tok_declined' ? 'Mock payment declined.' : 'Use the success token for the demo checkout.';
+    if (demoMode && token !== 'tok_success') {
+      if (token === 'tok_declined') return 'Mock payment declined. No stock was taken; try another token.';
+      if (token === 'tok_capture_fail') return 'Payment authorization succeeded, but capture failed. No charge was completed.';
+      return 'Use tok_success, tok_declined or tok_capture_fail for the mock gateway.';
+    }
     if (demoMode && discount && discount.toUpperCase() !== 'WELCOME10') return 'Discount code not recognized.';
     if (!demoMode) {
       try {
@@ -167,9 +187,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await Promise.all(resolved.map(a => db.runAsync('DELETE FROM actions WHERE id = ?', a.action_id)));
     setQueue(current => current.filter(a => a.status === 'pending'));
   }, [queue]);
-  useEffect(() => { if (online && queue.some(a => a.status === 'pending')) void syncQueue().catch(() => undefined); }, [online]);
+  useEffect(() => {
+    if (!ready) return;
+    if (online && !wasOnline.current && !demoMode && queue.some(a => a.status === 'pending')) void syncQueue().catch(() => undefined);
+    wasOnline.current = online;
+  }, [ready, online, demoMode, queue, syncQueue]);
 
-  const value = useMemo(() => ({ ready, account, serverUrl, demoMode, online, syncing, fixtures, standings, club, queue, cart, receipt, login, logout, setServerUrl, setDemoMode, addToCart, clearCart, checkout, queueAction, syncQueue, clearResolved, refreshCache }), [ready, account, serverUrl, demoMode, online, syncing, fixtures, standings, club, queue, cart, receipt, login, logout, setServerUrl, setDemoMode, addToCart, clearCart, checkout, queueAction, syncQueue, clearResolved, refreshCache]);
+  const value = useMemo(() => ({ ready, account, serverUrl, demoMode, online, syncing, fixtures, standings, club, queue, cart, receipt, login, logout, setServerUrl, setDemoMode, addToCart, clearCart, checkout, addPlayer, queueAction, syncQueue, clearResolved, refreshCache }), [ready, account, serverUrl, demoMode, online, syncing, fixtures, standings, club, queue, cart, receipt, login, logout, setServerUrl, setDemoMode, addToCart, clearCart, checkout, addPlayer, queueAction, syncQueue, clearResolved, refreshCache]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export function useApp() { const value = useContext(Context); if (!value) throw new Error('AppProvider missing'); return value; }

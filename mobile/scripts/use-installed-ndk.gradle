@@ -1,0 +1,8 @@
+// Local build shortcut only: use an already-installed Android NDK when the
+// Expo SDK's default NDK would require a large download on slow event Wi-Fi.
+// The normal build keeps Expo's default 27.1.12297006.
+gradle.beforeProject { project ->
+    if (project == project.rootProject) {
+        project.ext.set('ndkVersion', '27.0.12077973')
+    }
+}

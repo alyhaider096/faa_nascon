@@ -23,7 +23,7 @@ export function MatchCard({ fixture, featured = false, onPress }: { fixture: Fix
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: featured ? 24 : 18, marginBottom: 18 }}>
       <Team name={fixture.home} />
       <View style={{ minWidth: featured ? 95 : 80, alignItems: 'center' }}>
-        <Text style={{ color: C.text, fontSize: featured ? 28 : 24, fontWeight: '900', letterSpacing: -1 }}>{fixture.score}</Text>
+        <Text style={{ color: C.text, fontSize: featured ? 36 : 27, fontWeight: '900', letterSpacing: -1.5 }}>{fixture.score}</Text>
         <Text style={{ color: fixture.status === 'Live' ? C.accent : C.muted, fontSize: 11, fontWeight: '800', marginTop: 5 }}>{fixture.status === 'Live' ? 'LIVE NOW' : fixture.time}</Text>
       </View>
       <Team name={fixture.away} />

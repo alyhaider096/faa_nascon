@@ -1,14 +1,18 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { C, TENANT } from '../theme';
 
 export function BrandMark() {
   return <View accessibilityLabel={`${TENANT.name} logo`} style={{ width: 54, height: 54, borderRadius: 16, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}><Text style={{ color: C.bg, fontSize: 29, fontWeight: '900' }}>{TENANT.logoText}</Text></View>;
 }
 
+export function AppMark({ size = 64 }: { size?: number }) {
+  return <Image source={require('../../assets/leagueops-icon.png')} accessibilityLabel="LeagueOps mark" style={{ width: size, height: size, borderRadius: Math.round(size * .22), borderWidth: 1, borderColor: C.line, marginBottom: 14 }} />;
+}
+
 export function Page({ children, title, eyebrow, subtitle }: { children: React.ReactNode; title: string; eyebrow?: string; subtitle?: string }) {
   return <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-    {eyebrow ? <Text style={styles.eyebrow}>{eyebrow.toUpperCase()}</Text> : null}
+    {eyebrow ? <View style={styles.pageTop}><Text style={styles.eyebrow}>{eyebrow.toUpperCase()}</Text><View style={styles.tenantBadge} accessibilityLabel={`${TENANT.name} tenant`}><Text style={styles.tenantInitial}>{TENANT.logoText}</Text><Text style={styles.tenantName}>{TENANT.name.toUpperCase()}</Text></View></View> : null}
     <Text style={styles.title}>{title}</Text>
     {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
     {children}
@@ -16,10 +20,11 @@ export function Page({ children, title, eyebrow, subtitle }: { children: React.R
 }
 export function Card({ children, onPress, accent }: { children: React.ReactNode; onPress?: () => void; accent?: boolean }) {
   const inside = <View style={[styles.card, accent && styles.accentCard]}>{children}</View>;
-  return onPress ? <Pressable onPress={onPress} accessibilityRole="button">{inside}</Pressable> : inside;
+  return onPress ? <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => ({ opacity: pressed ? .78 : 1 })}>{inside}</Pressable> : inside;
 }
-export function Button({ title, onPress, secondary, disabled, danger }: { title: string; onPress: () => void; secondary?: boolean; disabled?: boolean; danger?: boolean }) {
-  return <Pressable onPress={onPress} disabled={disabled} style={[styles.button, secondary && styles.secondaryButton, danger && styles.dangerButton, disabled && { opacity: .45 }]} accessibilityRole="button" accessibilityLabel={title}>
+export function Button({ title, onPress, secondary, disabled, danger, loading }: { title: string; onPress: () => void; secondary?: boolean; disabled?: boolean; danger?: boolean; loading?: boolean }) {
+  return <Pressable onPress={onPress} disabled={disabled || loading} style={({ pressed }) => [styles.button, secondary && styles.secondaryButton, danger && styles.dangerButton, disabled && { opacity: .45 }, pressed && !disabled && { opacity: .78 }]} accessibilityRole="button" accessibilityLabel={title}>
+    {loading ? <ActivityIndicator color={secondary ? C.text : C.bg} style={{ marginRight: 8 }} /> : null}
     <Text style={[styles.buttonText, secondary && { color: C.text }]}>{title}</Text>
   </Pressable>;
 }
@@ -36,12 +41,16 @@ export function Muted({ children }: { children: React.ReactNode }) { return <Tex
 
 const styles = StyleSheet.create({
   page: { flexGrow: 1, backgroundColor: C.bg, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 },
-  eyebrow: { color: C.accent, letterSpacing: 2, fontWeight: '800', fontSize: 11, marginBottom: 8 },
+  pageTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 8 },
+  eyebrow: { color: C.accent, letterSpacing: 1.5, fontWeight: '800', fontSize: 11, flexShrink: 1 },
+  tenantBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 0 },
+  tenantInitial: { color: C.bg, backgroundColor: C.accent, width: 19, height: 19, borderRadius: 5, textAlign: 'center', textAlignVertical: 'center', fontWeight: '900', fontSize: 12 },
+  tenantName: { color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: .6 },
   title: { color: C.text, fontSize: 29, fontWeight: '800', letterSpacing: -.5, marginBottom: 8 },
   subtitle: { color: C.muted, fontSize: 15, lineHeight: 22, marginBottom: 24 },
   card: { backgroundColor: C.surface, borderColor: C.line, borderWidth: 1, borderRadius: 13, padding: 16, marginBottom: 10 },
   accentCard: { backgroundColor: C.surface2, borderColor: C.accentDark },
-  button: { backgroundColor: C.accent, minHeight: 50, paddingHorizontal: 18, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginVertical: 6 },
+  button: { backgroundColor: C.accent, minHeight: 50, paddingHorizontal: 18, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginVertical: 6 },
   secondaryButton: { backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line },
   dangerButton: { backgroundColor: C.danger },
   buttonText: { color: C.bg, fontSize: 15, fontWeight: '800' },
