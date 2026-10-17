@@ -20,4 +20,4 @@ Demo accounts all use `Nascon@26`: `admin@nascon.test`, `organizer@nascon.test`,
 
 The official contract is the supplied Part I specification. The backend must expose port 8080, boot through `DAY1_SALT=<value> docker compose up -d --build`, and implement the exact audit routes, status codes, and signatures. Never commit the real salt. The mobile team will replace mock reads with authenticated `/api/v1/*` adapters and retain the audit-compatible offline action envelope.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md), [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md), and [BACKEND_HANDOFF.md](BACKEND_HANDOFF.md). The release artifact required for Android judging is `mobile/release/app-release.apk`; it must be built and committed before the deadline.
+See [ARCHITECTURE.md](ARCHITECTURE.md), [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md), [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md), and [BACKEND_HANDOFF.md](BACKEND_HANDOFF.md). The release artifact required for Android judging is `mobile/release/app-release.apk`; it must be built and committed before the deadline.
