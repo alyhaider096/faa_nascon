@@ -27,6 +27,18 @@
 - Result: 155 passed, 4 skipped, 1 dependency deprecation warning in 2.46s. The PostgreSQL cases remain skipped.
 - Handoff: `backend/DAY2_DOMAIN_HANDOFF.md`. No production logic was changed. No live QR/media/socket claims.
 
+## RBAC and mobile event checkpoint
+
+- Baseline: `40e23bfded60d0f82ec7d937fd47a2cac3d163d7`; new tests/fixes are in the commit containing this entry.
+- Date: 18 October 2026, approximately 11:15-11:21 Asia/Karachi.
+- Environment: isolated local PostgreSQL 16 and Redis 7 on loopback ports 55432/56379, Windows Python 3.12, pytest 8.3.5, pinned backend dependencies. Shared backend untouched.
+- Command: `python -m pytest tests/rbac/test_rbac.py tests/integration/test_platform.py tests/integration/test_domain_tenant_scope.py -q --junitxml=tests/reports/rbac-baseline.xml`.
+- Result: 67 passed in 31.78s; two pytest cache permission warnings, no assertion failures.
+- Command: `python -m pytest tests/integration/test_mobile_event_roles.py -q -p no:cacheprovider --junitxml=tests/reports/mobile-event-roles.xml`.
+- Result: 22 passed in 14.42s. Includes scores and compensation, all roles, both submission paths, replay and foreign-league denial. Earlier exploratory combined run also passed 24 cases; its XML was replaced by this focused final report.
+- Mobile: `npm run typecheck` and `CI=1 EXPO_NO_TELEMETRY=1 npm run lint` passed after final changes. Initial lint was blocked by Expo telemetry writing outside workspace; disabling telemetry allowed the normal lint command to pass.
+- Review: `tests/reports/RBAC_REVIEW.md`. Device/browser execution and APK rebuild not run; no production coverage inferred.
+
 ## Recording rules
 
 For each run append exact tested SHA, timestamp, target URL/environment, command,

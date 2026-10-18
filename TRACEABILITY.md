@@ -40,6 +40,19 @@ subscription contract and the required Day 2 socket path.
 
 ## Preserved Day 1 records
 
+### Current RBAC regression update
+
+See `tests/reports/RBAC_REVIEW.md`: the existing five-role/mobile/tenant suite
+passed 67 tests against disposable PostgreSQL/Redis. New
+`tests/integration/test_mobile_event_roles.py` passed 22 cases for all-role
+score/correction writes, direct/offline replay, persisted readback and league
+scope. Evidence: `rbac-baseline.xml` and `mobile-event-roles.xml` under
+`tests/reports/`. No backend authorization failure reproduced. Mobile feedback,
+correction confirmation and post-sync score refresh fixes in
+`mobile/src/app/score.tsx` and `mobile/src/state/AppContext.tsx` pass typecheck/lint;
+rebuilt APK/device acceptance remains not run. This updates FR-5.1/NFR-4 evidence,
+without claiming Day 2 guest enforcement or deployed acceptance.
+
 Domain implementation and tests are available on the backend/fatima-domain branch.
 Status distinguishes tested services from host/mobile integration still pending.
 

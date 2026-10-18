@@ -22,7 +22,7 @@ type AppState = {
   setServerUrl: (value: string) => Promise<void>; setDemoMode: (value: boolean) => Promise<void>;
   addToCart: (item: BasketItem) => void; clearCart: () => void; checkout: (token: string, discount: string) => Promise<string | null>;
   addPlayer: (player: { name: string; position: string; number: number }) => Promise<string | null>;
-  queueAction: (action: Omit<PendingAction, 'action_id' | 'queued_at' | 'status'>) => Promise<void>;
+  queueAction: (action: Omit<PendingAction, 'action_id' | 'queued_at' | 'status'>) => Promise<PendingAction>;
   syncQueue: () => Promise<void>; clearResolved: () => Promise<void>; refreshCache: () => Promise<void>;
 };
 
@@ -306,14 +306,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       try {
         await api(`/api/v1/matches/${encodeURIComponent(String(action.payload.match_id))}/events`, action.payload);
         const applied: PendingAction = { ...saved, status: 'applied', resolution: 'Applied by the server.' }; await saveAction(applied); setQueue(current => current.map(a => a.action_id === saved.action_id ? applied : a));
-        await refreshMatch(String(action.payload.match_id));
+        // The write is already acknowledged. A failed read must not relabel it rejected.
+        try { await refreshMatch(String(action.payload.match_id)); }
+        catch { setDataError('Event accepted, but the score could not be refreshed. Retry connection to reload it.'); }
+        return applied;
       } catch (error) {
         // A lost response is safely retried with the same event_id through offline-sync.
         if (error instanceof ApiError && error.status >= 400 && error.status < 500 && error.status !== 401 && error.status !== 429) {
           const rejected: PendingAction = { ...saved, status: 'rejected', resolution: error.message }; await saveAction(rejected); setQueue(current => current.map(a => a.action_id === saved.action_id ? rejected : a));
+          return rejected;
         }
+        return { ...saved, resolution: error instanceof Error ? `${error.message} The action remains queued for retry.` : 'Awaiting server confirmation. Open the sync queue to retry.' };
       }
     }
+    return { ...saved, resolution: demoMode ? 'Demo mode: saved locally only. Turn off Demo data and sign in to submit live events.' : 'Saved offline. It will sync after reconnection.' };
   }, [account, api, demoMode, online, refreshMatch, serverUrl]);
   const syncQueue = useCallback(async () => {
     if (!online || syncing) return;
@@ -328,9 +334,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const data = await api<{ results: { action_id: string; status: 'applied' | 'rejected' | 'duplicate'; error_code: string | null; message?: string }[] }>('/api/v1/offline-sync', { device_id: 'leagueops-android', actions: pending.map(({ action_id, type, queued_at, base_version, payload }) => ({ action_id, type, queued_at, base_version, payload })) });
         const updated: PendingAction[] = pending.map(a => { const result = data.results.find(r => r.action_id === a.action_id); return result ? { ...a, status: result.status === 'rejected' ? 'rejected' : 'applied', resolution: result.message || syncExplanation(result.error_code, result.status) } : a; });
         await Promise.all(updated.map(saveAction)); setQueue(current => current.map(a => updated.find(u => u.action_id === a.action_id) ?? a));
+        const changedMatches = [...new Set(updated.filter(a => a.status === 'applied' && a.type === 'score_event').map(a => String(a.payload.match_id)))];
+        try { await Promise.all(changedMatches.map(refreshMatch)); }
+        catch { setDataError('Sync completed, but scores could not be refreshed. Retry connection to reload them.'); }
       }
     } finally { setSyncing(false); }
-  }, [account, api, demoMode, online, queue, serverUrl, syncing]);
+  }, [account, api, demoMode, online, queue, refreshMatch, serverUrl, syncing]);
   const clearResolved = useCallback(async () => {
     if (web) { const retained = queue.filter(a => a.status !== 'applied' || a.owner !== `${serverUrl}:${account?.user_id ?? 'demo'}`); localStorage.setItem('leagueops:actions', JSON.stringify(retained)); setQueue(retained); return; }
     const db = await database();
