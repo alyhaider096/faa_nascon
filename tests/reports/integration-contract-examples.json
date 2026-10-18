@@ -1,0 +1,1010 @@
+{
+  "scope": "Actual isolated local HTTP/WebSocket capture; NOT deployed acceptance and NOT an all-contracts pass",
+  "source_sha": "4ef28e1d595fd3ec0757c053b4501f2611a1b3f8",
+  "captured_at_utc": "2026-10-18T07:13:13.341154+00:00",
+  "base_url": "http://127.0.0.1:55478",
+  "records": [
+    {
+      "label": "health",
+      "request": {
+        "method": "GET",
+        "path": "/health",
+        "body": null,
+        "authorization": null
+      },
+      "response": {
+        "status": 200,
+        "location": null,
+        "body": {
+          "status": "ok"
+        }
+      }
+    },
+    {
+      "label": "member login",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/auth/login",
+        "body": {
+          "email": "admin@nascon.test",
+          "password": "<redacted>"
+        },
+        "authorization": null
+      },
+      "response": {
+        "status": 200,
+        "location": null,
+        "body": {
+          "token": "<redacted>",
+          "token_type": "Bearer",
+          "user": {
+            "user_id": "user-admin",
+            "email": "admin@nascon.test",
+            "role": "super_admin",
+            "display_name": "Platform Admin",
+            "tenant_id": null,
+            "league_id": null,
+            "club_id": null,
+            "player_id": null
+          },
+          "tenant": null
+        }
+      }
+    },
+    {
+      "label": "SPA hosting",
+      "request": {
+        "method": "GET",
+        "path": "/web/matches/match-m1/live",
+        "body": null,
+        "authorization": null
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "QR redirect",
+      "request": {
+        "method": "GET",
+        "path": "/q/m1-live",
+        "body": null,
+        "authorization": null
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "public match",
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/public/matches/match-m1",
+        "body": null,
+        "authorization": null
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "public co-stream",
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/public/costream/cs-session-101",
+        "body": null,
+        "authorization": null
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "required reset match",
+      "request": {
+        "method": "GET",
+        "path": "/audit/v1/score/match-m1",
+        "body": null,
+        "authorization": null
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "MATCH_NOT_FOUND",
+            "message": "Match not found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "existing seeded match before mutations",
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/matches/match-001",
+        "body": null,
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 200,
+        "location": null,
+        "body": {
+          "match_id": "match-001",
+          "sport_id": "football",
+          "league_id": "league-alpha-1",
+          "status": "in_progress",
+          "outcome": "pending",
+          "winner_team_id": "club-alpha-1",
+          "tiebreak_winner_team_id": null,
+          "home": {
+            "team_id": "club-alpha-1",
+            "score": 2,
+            "wickets": null,
+            "balls": null,
+            "overs": null,
+            "fair_play": 0
+          },
+          "away": {
+            "team_id": "club-alpha-2",
+            "score": 1,
+            "wickets": null,
+            "balls": null,
+            "overs": null,
+            "fair_play": 0
+          },
+          "version": 4,
+          "events": [
+            {
+              "sequence": 1,
+              "event_id": "match-001-start",
+              "type": "match_start",
+              "payload": {},
+              "signature": "8af5158ac00e3f12e497ae1963073a463f3437425080f9e4cb5244884d540df5",
+              "compensated": false,
+              "compensated_by": null
+            },
+            {
+              "sequence": 2,
+              "event_id": "match-001-goal-home-1",
+              "type": "score",
+              "payload": {
+                "team_id": "club-alpha-1",
+                "event_type": "goal"
+              },
+              "signature": "fc4a30257a22ac7e4a1465057d802c6d027f51d41a16e368d05b6f5a10b783fb",
+              "compensated": false,
+              "compensated_by": null
+            },
+            {
+              "sequence": 3,
+              "event_id": "match-001-goal-away-1",
+              "type": "score",
+              "payload": {
+                "team_id": "club-alpha-2",
+                "event_type": "goal"
+              },
+              "signature": "3e221f296c69af1e517a4059d87c769d304429bbf2a9fdd0d5a025ccd5502cbf",
+              "compensated": false,
+              "compensated_by": null
+            },
+            {
+              "sequence": 4,
+              "event_id": "match-001-goal-home-2",
+              "type": "score",
+              "payload": {
+                "team_id": "club-alpha-1",
+                "event_type": "goal"
+              },
+              "signature": "77bed42cfd0b1e31c7ecaae11315a89396b5269145bf520dfc7e57be1923340d",
+              "compensated": false,
+              "compensated_by": null
+            }
+          ],
+          "scoring_events": {
+            "goal": {
+              "points": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "existing pinned merchandise",
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/matches/match-001/pinned",
+        "body": null,
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 200,
+        "location": null,
+        "body": {
+          "match_id": "match-001",
+          "product": {
+            "product_id": "prod-jersey-001",
+            "tenant_id": "tenant-alpha",
+            "club_id": "club-alpha-1",
+            "name": "Alpha FC Home Jersey",
+            "category": "apparel",
+            "description": "Official home jersey",
+            "pinned_match_id": "match-001",
+            "variants": [
+              {
+                "variant_id": "var-jersey-001-L",
+                "attributes": {
+                  "size": "L",
+                  "color": "blue"
+                },
+                "price_minor": 450000,
+                "currency": "PKR",
+                "stock": 5
+              },
+              {
+                "variant_id": "var-jersey-001-M",
+                "attributes": {
+                  "size": "M",
+                  "color": "blue"
+                },
+                "price_minor": 450000,
+                "currency": "PKR",
+                "stock": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "label": "guest session",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/guest/session",
+        "body": {},
+        "authorization": null
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "guest cart staging",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/guest/cart",
+        "body": {
+          "items": [
+            {
+              "variant_id": "var-jersey-001-L",
+              "quantity": 1
+            }
+          ]
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "guest chat guard",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/chat",
+        "body": {
+          "chat_room_id": "chat-cs-session-101",
+          "message_id": "contract-chat",
+          "text": "Hello"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "guest audit checkout guard",
+      "request": {
+        "method": "POST",
+        "path": "/audit/v1/checkout",
+        "body": {
+          "order_id": "contract-guest-order",
+          "customer_id": "user-viewer",
+          "items": [
+            {
+              "variant_id": "var-jersey-001-L",
+              "quantity": 1
+            }
+          ],
+          "discount_code": null,
+          "payment": {
+            "token": "<redacted>"
+          }
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 201,
+        "location": null,
+        "body": {
+          "order_id": "contract-guest-order",
+          "status": "paid",
+          "currency": "PKR",
+          "items": [
+            {
+              "variant_id": "var-jersey-001-L",
+              "quantity": 1,
+              "unit_price_minor": 450000
+            }
+          ],
+          "subtotal_minor": 450000,
+          "discount_minor": 0,
+          "total_minor": 450000,
+          "payment": {
+            "authorization_id": "auth_1",
+            "capture_id": "cap_1",
+            "state": "captured"
+          },
+          "receipt": {
+            "payload": {
+              "order_id": "contract-guest-order",
+              "customer_id": "user-viewer",
+              "items": [
+                {
+                  "variant_id": "var-jersey-001-L",
+                  "quantity": 1,
+                  "unit_price_minor": 450000
+                }
+              ],
+              "subtotal_minor": 450000,
+              "discount_minor": 0,
+              "total_minor": 450000,
+              "currency": "PKR",
+              "paid_at": "2026-10-18T07:13:13Z"
+            },
+            "signature": "4114c6fc36cb1b2f4019df3b0546278508a71e959735069bb0dba5293c7b9b7d",
+            "pdf_base64": "<redacted>"
+          }
+        }
+      }
+    },
+    {
+      "label": "guest member checkout guard",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/checkout",
+        "body": {
+          "order_id": "contract-member-order",
+          "customer_id": "user-viewer",
+          "items": [
+            {
+              "variant_id": "var-jersey-001-L",
+              "quantity": 1
+            }
+          ],
+          "discount_code": null,
+          "payment": {
+            "token": "<redacted>"
+          }
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 401,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "UNAUTHENTICATED",
+            "message": "Invalid, expired or tampered token.",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "guest audit event guard",
+      "request": {
+        "method": "POST",
+        "path": "/audit/v1/events",
+        "body": {
+          "event_id": "contract-guest-goal",
+          "match_id": "match-001",
+          "type": "score",
+          "payload": {
+            "team_id": "club-alpha-1",
+            "event_type": "goal"
+          }
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 201,
+        "location": null,
+        "body": {
+          "event_id": "contract-guest-goal",
+          "match_id": "match-001",
+          "type": "score",
+          "sequence": 5,
+          "match_version": 5,
+          "signature": "dce0e4f4029d815fff44fe1b1c9c0ceee4655871860d3c9578c0553ba480c4b2"
+        }
+      }
+    },
+    {
+      "label": "cart merge",
+      "request": {
+        "method": "POST",
+        "path": "/audit/v1/guest/cart-merge",
+        "body": {
+          "guest_token": "guest_anon_tok_7721",
+          "registered_user_id": "user-admin",
+          "guest_cart": [
+            {
+              "variant_id": "var-jersey-001-L",
+              "quantity": 1
+            }
+          ],
+          "test_write_block": true
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "member cart read",
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/cart",
+        "body": null,
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "stream key generate",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/stream/key",
+        "body": {
+          "action": "generate",
+          "player_id": "player-alpha-1",
+          "label": "qa-contract"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "stream key rotate",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/stream/key",
+        "body": {
+          "action": "rotate",
+          "player_id": "player-alpha-1",
+          "label": "qa-contract"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "stream key revoke",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/stream/key",
+        "body": {
+          "action": "revoke",
+          "player_id": "player-alpha-1",
+          "label": "qa-contract"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "audit stream-key fallback",
+      "request": {
+        "method": "POST",
+        "path": "/audit/v1/stream/key",
+        "body": {
+          "action": "generate",
+          "player_id": "player-alpha-1",
+          "label": "qa-contract"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "co-stream create",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/costream/sessions/cs-session-101/actions",
+        "body": {
+          "action": "create"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "co-stream join",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/costream/sessions/cs-session-101/actions",
+        "body": {
+          "action": "join"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "co-stream invite",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/costream/sessions/cs-session-101/actions",
+        "body": {
+          "action": "invite"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "co-stream set_layout",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/costream/sessions/cs-session-101/actions",
+        "body": {
+          "action": "set_layout"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "co-stream mute",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/costream/sessions/cs-session-101/actions",
+        "body": {
+          "action": "mute"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "co-stream spotlight",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/costream/sessions/cs-session-101/actions",
+        "body": {
+          "action": "spotlight"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "co-stream kick",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/costream/sessions/cs-session-101/actions",
+        "body": {
+          "action": "kick"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "co-stream leave",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/costream/sessions/cs-session-101/actions",
+        "body": {
+          "action": "leave"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "co-stream stop",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/costream/sessions/cs-session-101/actions",
+        "body": {
+          "action": "stop"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "QR metadata",
+      "request": {
+        "method": "GET",
+        "path": "/audit/v1/qr/match-m1?inspect=true",
+        "body": null,
+        "authorization": null
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "QR export svg",
+      "request": {
+        "method": "GET",
+        "path": "/audit/v1/qr/match-m1/export.svg",
+        "body": null,
+        "authorization": null
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "QR export png",
+      "request": {
+        "method": "GET",
+        "path": "/audit/v1/qr/match-m1/export.png",
+        "body": null,
+        "authorization": null
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "QR export pdf",
+      "request": {
+        "method": "GET",
+        "path": "/audit/v1/qr/match-m1/export.pdf",
+        "body": null,
+        "authorization": null
+      },
+      "response": {
+        "status": 404,
+        "location": null,
+        "body": {
+          "error": {
+            "code": "NOT_FOUND",
+            "message": "Not Found",
+            "details": {}
+          }
+        }
+      }
+    },
+    {
+      "label": "member score notification trigger",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/matches/match-001/events",
+        "body": {
+          "event_id": "contract-member-goal",
+          "match_id": "match-001",
+          "type": "score",
+          "payload": {
+            "team_id": "club-alpha-1",
+            "event_type": "goal"
+          }
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 201,
+        "location": null,
+        "body": {
+          "event_id": "contract-member-goal",
+          "match_id": "match-001",
+          "type": "score",
+          "sequence": 6,
+          "match_version": 6,
+          "signature": "e1fc9c99dacd129186526979319f3966a4ff479268c38fdf5ece3457b64c6551"
+        }
+      }
+    },
+    {
+      "label": "merchandise notification trigger",
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/matches/match-001/pin",
+        "body": {
+          "product_id": "prod-jersey-001"
+        },
+        "authorization": "<redacted>"
+      },
+      "response": {
+        "status": 200,
+        "location": null,
+        "body": {
+          "match_id": "match-001",
+          "product_id": "prod-jersey-001",
+          "name": "Alpha FC Home Jersey"
+        }
+      }
+    }
+  ],
+  "sockets": [
+    {
+      "path": "/ws/matches/match-001",
+      "role": "member",
+      "handshake_http_status": 403
+    },
+    {
+      "path": "/ws/matches/match-001",
+      "role": "guest",
+      "handshake_http_status": 403
+    },
+    {
+      "path": "/ws/v1/matches/match-001",
+      "role": "guest",
+      "handshake_http_status": 403
+    },
+    {
+      "path": "/ws/v1/matches/match-001",
+      "role": "member",
+      "frames": [
+        {
+          "type": "hello",
+          "match_id": "match-001"
+        },
+        {
+          "type": "score_updated",
+          "match_id": "match-001",
+          "event_id": "contract-member-goal",
+          "version": 6
+        },
+        {
+          "type": "product_pinned",
+          "match_id": "match-001",
+          "product_id": "prod-jersey-001",
+          "name": "Alpha FC Home Jersey"
+        }
+      ]
+    }
+  ],
+  "missing_frames": [
+    "chat",
+    "invitation",
+    "host_change"
+  ],
+  "media": "No implemented media/VOD routes; no LAN ingest/playback verified"
+}

@@ -1,5 +1,26 @@
 # Requirement Traceability
 
+## Integration contract capture - 18 October 2026, 12:13 PKT
+
+Tested SHA: `4ef28e1d595fd3ec0757c053b4501f2611a1b3f8`.
+`tests/reports/INTEGRATION_CONTRACT_STATUS.md` and
+`integration-contract-examples.json` record actual isolated HTTP/socket probes.
+They supersede earlier "not run" labels for these specific local route checks;
+deployed acceptance remains not run. Public reads, guest session/staging/merge,
+QR, stream-key/media and co-stream routes return 404 in this backend.
+
+**FR-4.3 FAILED locally:** valid audit checkout and score-event requests carrying
+the seeded guest bearer token returned 201. Member checkout returns 401 rather
+than the required 403/code. This requires Abdullah's guest guard integration;
+ordinary five-role RBAC passing does not establish guest enforcement.
+
+**FR-4.1/4.2/4.4 blocked locally:** absent QR/public/merge endpoints; required
+match-m1 is not seeded, while existing match-001 is seeded 2:1. The old member
+socket is `/ws/v1/matches/{id}` and its score frame lacks direct scores/room
+sequence. No successful Day 2 media/QR/signing/latency claim is made. The capture
+runner is diagnostic and intentionally outside default test_* collection;
+its execution success is not feature acceptance.
+
 ## Hourly QA checkpoint - 18 October 2026, 12:05 PKT scheduled run
 
 Integrated source reviewed: `c3848bd` (Ali's interactive demo), including

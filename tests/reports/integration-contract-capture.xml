@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="3.380" timestamp="2026-10-18T12:13:10.181521+05:00" hostname="DESKTOP-DQM86BJ"><testcase classname="tests.integration.test_contract_capture" name="test_capture_actual_contracts" time="3.301" /></testsuite></testsuites>

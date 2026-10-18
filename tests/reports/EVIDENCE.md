@@ -66,6 +66,18 @@
 - No COVERAGE_DAY2.json generated: no measured five-module production coverage is available. Day 1 mappings and coverage artifacts preserved.
 - Checkpoint changes contain evidence/traceability only; Ali's UI and Abdullah's implementation/configuration were not edited.
 
+## Eight-contract verification capture - 18 October 2026, 12:13 PKT
+
+- Tested source: `4ef28e1d595fd3ec0757c053b4501f2611a1b3f8`, fetched origin/main; includes frontend c3848bd.
+- Target: real in-process HTTP/WebSocket server on loopback, isolated PostgreSQL 16 / Redis 7. Public test signing environment; no real team key injected. Shared deployed health probe timed out after five seconds.
+- Executed command: `python -m pytest tests/integration/test_contract_capture.py -q -p no:cacheprovider --junitxml=tests/reports/integration-contract-capture.xml`.
+- Runner was subsequently moved to `tests/diagnostics/capture_integration_contracts.py` to keep diagnostics outside default acceptance-test collection. Invoke explicitly with pytest for future captures.
+- Capture result: 1 diagnostic completed in 3.38s, 36 sanitized actual HTTP records and four WebSocket outcomes. This is NOT an all-contracts pass. Actual feature failures/missing routes are detailed in `INTEGRATION_CONTRACT_STATUS.md`.
+- Critical observation: guest bearer on valid audit checkout and score event returned 201; required 403 GUEST_WRITE_FORBIDDEN is not implemented. These writes touched only disposable QA data. Member checkout returned 401; chat/session/merge and other missing routes returned 404.
+- Existing seeded match is match-001 at 2:1, not required match-m1 at 1:0. Product prod-jersey-001 / var-jersey-001-L exists. Member login and old authenticated score/pin socket frames were captured with tokens redacted.
+- Clean npm ci failed EUSAGE (missing emnapi core/runtime lock entries). Export of current frontend succeeded separately with existing node_modules, to an intermediate directory outside the repo. No backend SPA deployment performed.
+- Reports: `integration-contract-examples.json`, `integration-contract-capture.xml`, `INTEGRATION_CONTRACT_STATUS.md`. No implementation/config, teammate runtime or frontend source was edited.
+
 ## Recording rules
 
 For each run append exact tested SHA, timestamp, target URL/environment, command,
