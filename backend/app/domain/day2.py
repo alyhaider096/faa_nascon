@@ -175,7 +175,10 @@ def _target(entity_id: str, entity_type: str, status: str) -> str:
 
 
 def qr_metadata(conn, entity_id: str, *, inspect: bool, device_family: str = "desktop") -> dict:
-    row = conn.execute("SELECT * FROM day2_qr_mappings WHERE entity_id=%s FOR UPDATE", (entity_id,)).fetchone()
+    # Inspection is read-only; locking here serializes all 500 polling viewers.
+    # Real scans retain the row lock for exact counter increments.
+    lock = "" if inspect else " FOR UPDATE"
+    row = conn.execute("SELECT * FROM day2_qr_mappings WHERE entity_id=%s" + lock, (entity_id,)).fetchone()
     if row is None:
         raise DomainError(404, "QR_NOT_FOUND", "No QR mapping exists for this entity.", {"entity_id": entity_id})
     if not inspect:

@@ -24,7 +24,9 @@ def qr_client(request):
 
 @pytest.fixture(scope='session')
 def qr_salt(qr_client):
-    salt = os.environ.get('DAY2_SALT')
+    # Root integration conftest injects a public DAY2_SALT for its in-process app.
+    # External targets need a separate oracle key so collection cannot overwrite it.
+    salt = os.environ.get('QR_DAY2_SALT') or os.environ.get('DAY2_SALT')
     if not salt:
         pytest.fail('DAY2_SALT is missing; supply privately in the test process environment', pytrace=False)
     return salt

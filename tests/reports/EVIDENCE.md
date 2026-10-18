@@ -1,5 +1,40 @@
 # Day 2 evidence index
 
+## Integrated checkpoint - 18 October 2026, 13:54 PKT
+
+All fetched branches are integrated on main, pushed and remote-verified at
+`a31a2d327d37361693db3436bcbbe1489b6ed518`: backend bundle `4b162ca`, frontend
+`d234430`, and adversarial domain tests `9bc9894`. The historical statuses below
+describe earlier source and are superseded by this checkpoint for local checks.
+
+| Check | Actual result / evidence |
+| --- | --- |
+| Full isolated PostgreSQL/Redis suite at a31a2d3 | 451 passed, 17 skipped; `integrated-tests.xml`; raw measured aggregate coverage 90%, `integrated-coverage.json` |
+| Frontend pinned install/build | npm ci, TypeScript, lint and web export passed on integrated source |
+| Real parallel Selenium Grid | 3 passed; `selenium-report.xml`; hosted exported app, two Chrome sessions and Firefox |
+| Independent local QR HTTP/signature/export checks | 6 passed, 5 deselected; `qr-live-local.xml`; private Day 2 key loaded without disclosure; real SVG/PNG/PDF decoded |
+| QR read-only lock correction | Inspection no longer locks the mapping row; real scans retain locking; 34 targeted tests passed, `post-qr-lock-tests.xml` |
+| Official 500-viewer + 50-poster k6 profile | FAILED. Initial proxy run: zero HTTP failures but p95 2.64s. Proxy rerun unreliable (17.42% failures). Direct native run: 92.83% failed requests; successful-response p95 7.57s. `k6-summary-before-qr-lock.json`, `k6-summary-proxy-after-qr-lock.json`, `k6-summary.json`. No load pass claimed. |
+| Salt | Runtime/example/Compose wiring now present; independent local signatures passed. Actual secrets remain ignored. GitHub secret presence and Abdullah's deployed runtime are unverified. |
+
+Target: disposable local API at http://127.0.0.1:8080 using separate `gridqa`
+database and Redis DB 1; regression uses `nascon_test` and Redis DB 0.
+This does not establish phone-reachable media, full clean Compose startup,
+Appium acceptance, 25-client websocket p95, all QR state transitions, or the
+deployment on Abdullah's laptop. Five logical module coverage gates remain
+unproven; aggregate coverage must not be copied into COVERAGE_DAY2.json.
+
+Commands: `python -m pytest tests -q -p no:cacheprovider --cov=backend/app
+--cov-report=json:tests/reports/integrated-coverage.json
+--junitxml=tests/reports/integrated-tests.xml`; `python -m pytest -n 3
+tests/selenium -q -p no:cacheprovider --junitxml=tests/reports/selenium-report.xml`
+with RUN_SELENIUM_GRID=1 and local API/hosted-web targets; QR selected acceptance
+via tests/qr/test_qr_live.py using --qr-base-url, --qr-cases and private
+QR_DAY2_SALT; native k6 v2.3.0 `run --summary-export=tests/reports/k6-summary.json
+tests/k6_load.js`. Full post-correction regression is running; its separate
+post-integration reports must be assessed before any pass is claimed.
+
+
 ## Documentation status update - 18 October 2026, 12:36 PKT
 
 - Latest fetched main: `61efc02593985bc71b57be6806b44c10139c1e07`; no new backend commit at update time.

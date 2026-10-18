@@ -1,3 +1,14 @@
+# Day 2 signing integration update - 18 October 2026, 13:54 PKT
+
+The integrated backend now declares, forwards and loads DAY2_SALT. The readiness
+checker passes all static wiring checks using the ignored local env file.
+Six selected independent HTTP QR checks passed against the isolated local API,
+including private-key signature validation and real SVG/PNG/PDF decoding.
+No literal key was pushed. Teammates must provision both supplied keys privately
+in their own backend runtime. GitHub secrets and Abdullah's deployed runtime
+remain UNVERIFIED. The preparation checklist below is retained as history;
+its earlier missing-wiring statements are superseded by this update.
+
 # Release blocker: Day 2 signing configuration
 
 Current status at QR preparation: **NOT COMPLETE**. Private values are available

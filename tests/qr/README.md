@@ -26,6 +26,9 @@ Abdullah supplies a reachable QR service, explicit private DAY2_SALT loading,
 known entity IDs and QR registrations. Set `QR_BASE_URL` and `QR_CASES`, or use
 the equivalent CLI options. `cases.example.json` describes the required fixture
 set; its `qa-*` IDs are placeholders, not a claim those rows already exist.
+For an external target, supply its key privately as `QR_DAY2_SALT`; the root
+integration conftest sets DAY2_SALT to a public test value for its own server.
+QR_DAY2_SALT keeps external oracle verification separate from that test fixture.
 Provide all six match states plus player, club and co-stream entities. Use one
 live fixture for completion and a separate live fixture for postponement.
 Run against a quiet target with no unrelated match changes or scans.
