@@ -1,5 +1,24 @@
 # Requirement Traceability
 
+## Final regression - 18 October 2026, 13:58 PKT
+
+Final source `758d46ce860d4531d843f78160c6a94d8fb0ec8b` (same source as the
+working tree when the run began) passed **451 tests, 17 skipped, 8 warnings**
+in 200.45 seconds. Command: `python -m pytest tests -q -p no:cacheprovider
+--cov=backend/app --cov-report=json:tests/reports/post-integration-coverage.json
+--junitxml=tests/reports/post-integration-tests.xml`. Target: isolated local
+PostgreSQL `nascon_test` on port 55432 and Redis DB 0 on port 56379.
+Measured aggregate line coverage: **90.22%**. The skipped device/Grid/live-QR
+gates in this full run retain their meaning; separate actual Grid and selected
+QR results are recorded below. Aggregate coverage does not prove five logical
+Day 2 module thresholds. Do not fabricate COVERAGE_DAY2.json.
+
+Fresh remote fetch found no unmerged branches. Compose config validation passed;
+full clean Compose startup was not run. A private-value scan found neither salt
+in tracked files. The hourly automation is paused for the freeze. The failed
+load gate and live-media/device/deployment gaps below remain open.
+
+
 ## Integrated checkpoint - 18 October 2026, 13:54 PKT
 
 All fetched branches are integrated on main, pushed and remote-verified at
