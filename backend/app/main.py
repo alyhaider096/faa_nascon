@@ -8,10 +8,12 @@ from __future__ import annotations
 import importlib
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.cors import CORSMiddleware
+from starlette.staticfiles import StaticFiles
 
 from .core import db, realtime
 from .core.config import get_settings
@@ -74,6 +76,12 @@ def create_app() -> FastAPI:
     app.include_router(mobile.router)
     _mount_optional(app, "app.api.domain_audit")
     _mount_optional(app, "app.api.domain_mobile")
+
+    web_dist = Path(day2.WEB_DIST)
+    if (web_dist / "_expo").is_dir():
+        app.mount("/_expo", StaticFiles(directory=web_dist / "_expo"), name="expo-assets")
+    if (web_dist / "assets").is_dir():
+        app.mount("/assets", StaticFiles(directory=web_dist / "assets"), name="web-assets")
 
     async def serve_match_socket(ws: WebSocket, match_id: str, *, guests: bool) -> None:
         token = ws.query_params.get("token")

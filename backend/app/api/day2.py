@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import json
+import os
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.concurrency import run_in_threadpool
 
 from ..core import realtime
@@ -194,7 +196,10 @@ async def media_auth(request: Request):
     return Response(status_code=200 if allowed else 401)
 
 
-GUEST_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content='width=device-width'>
+WEB_DIST = Path(os.environ.get("WEB_DIST_DIR", "/srv/web"))
+
+
+GUEST_FALLBACK_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content='width=device-width'>
 <title>LeagueOps Live</title></head><body><main aria-label='Live match media'>
 <video data-testid='guest-video-player' controls aria-label='Live match video'></video>
 <section data-testid='live-score-banner' aria-live=polite>1 - 0</section>
@@ -205,11 +210,12 @@ GUEST_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8><meta nam
 </main></body></html>"""
 
 
-@router.get("/web/matches/{match_id}/live", response_class=HTMLResponse)
-async def guest_match(match_id: str):
-    return HTMLResponse(GUEST_HTML)
-
-
-@router.get("/web/costream/{session_id}", response_class=HTMLResponse)
-async def guest_costream(session_id: str):
-    return HTMLResponse(GUEST_HTML)
+@router.get("/web/{client_path:path}", include_in_schema=False)
+async def guest_web_spa(client_path: str):
+    """Return the Expo SPA entrypoint for every public client-side route."""
+    index = WEB_DIST / "index.html"
+    if index.is_file():
+        return FileResponse(index, media_type="text/html")
+    # Source-only test runs do not build Node assets. The production image always
+    # contains /srv/web; this fallback keeps contract probes explicit and useful.
+    return HTMLResponse(GUEST_FALLBACK_HTML)

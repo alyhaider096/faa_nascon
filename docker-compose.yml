@@ -34,7 +34,9 @@ services:
     restart: unless-stopped
 
   api:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     environment:
       DAY1_SALT: ${DAY1_SALT}
       DAY2_SALT: ${DAY2_SALT}
@@ -64,7 +66,9 @@ services:
     restart: unless-stopped
 
   worker:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     command: ["python", "-m", "app.worker"]
     environment:
       DAY1_SALT: ${DAY1_SALT}
