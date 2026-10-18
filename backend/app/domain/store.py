@@ -137,37 +137,72 @@ def _pdf_text(value: str, limit: int = 90) -> str:
 
 
 def render_receipt_pdf(payload: dict, *, status: str = "PAID") -> bytes:
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from xml.sax.saxutils import escape
+
     buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=A4, invariant=1, pageCompression=0)
-    c.setTitle("Receipt " + _pdf_text(payload["order_id"], 40))
-    y = 800
-    c.setFont("Helvetica-Bold", 18)
-    c.drawString(60, y, "Payment Receipt")
-    y -= 30
-    c.setFont("Helvetica", 11)
-    lines = [
-        f"Order: {_pdf_text(payload['order_id'])}",
-        f"Customer: {_pdf_text(payload['customer_id'])}",
-        f"Paid at: {payload['paid_at']}",
-        f"Status: {status}",
-        "",
-        "Items:",
-    ]
-    for it in payload["items"]:
-        lines.append(
-            f"  {_pdf_text(it['variant_id'], 40)} x {it['quantity']} @ PKR {_fmt_major(it['unit_price_minor'])}"
-        )
-    lines += [
-        "",
-        f"Subtotal: PKR {_fmt_major(payload['subtotal_minor'])}",
-        f"Discount: PKR {_fmt_major(payload['discount_minor'])}",
-        f"Total: PKR {_fmt_major(payload['total_minor'])}",
-    ]
-    for line in lines:
-        c.drawString(60, y, line)
-        y -= 18
-    c.showPage()
-    c.save()
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name="ReceiptMeta", fontName="Helvetica", fontSize=10,
+                              leading=15, textColor=colors.HexColor("#344155")))
+    styles.add(ParagraphStyle(name="ReceiptHeading", fontName="Helvetica-Bold", fontSize=24,
+                              leading=30, textColor=colors.HexColor("#142031")))
+    def paragraph(value):
+        return Paragraph(escape(_pdf_text(str(value), 240)), styles["ReceiptMeta"])
+
+    doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=48, leftMargin=48,
+                            topMargin=48, bottomMargin=54,
+                            title="Receipt " + _pdf_text(payload["order_id"], 40))
+    story = [Paragraph("LEAGUEOPS", styles["ReceiptMeta"]), Spacer(1, 8),
+             Paragraph("Payment Receipt", styles["ReceiptHeading"]), Spacer(1, 16)]
+    meta = Table([[paragraph("Order"), paragraph(payload["order_id"])],
+                  [paragraph("Customer"), paragraph(payload["customer_id"])],
+                  [paragraph("Paid at"), paragraph(payload["paid_at"])],
+                  [paragraph("Status"), paragraph(status)]], colWidths=[85, A4[0]-181])
+    meta.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "TOP"),
+                              ("BOTTOMPADDING", (0,0), (-1,-1), 7)]))
+    story += [meta, Spacer(1, 24)]
+    rows = [["ITEM / VARIANT", "QTY", "UNIT PRICE", "AMOUNT"]]
+    for item in payload["items"]:
+        rows.append([paragraph(item["variant_id"]), str(item["quantity"]),
+                     "PKR " + _fmt_major(item["unit_price_minor"]),
+                     "PKR " + _fmt_major(item["unit_price_minor"] * item["quantity"])])
+    table = Table(rows, colWidths=[A4[0]-335, 35, 100, 104], repeatRows=1, hAlign="LEFT")
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#142031")),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+        ("FONTNAME", (1,1), (-1,-1), "Helvetica"),
+        ("FONTSIZE", (0,0), (-1,-1), 9),
+        ("VALIGN", (0,0), (-1,-1), "TOP"),
+        ("ALIGN", (1,0), (-1,-1), "RIGHT"),
+        ("TOPPADDING", (0,0), (-1,-1), 11),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 11),
+        ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.HexColor("#F0F4F8"), colors.white]),
+        ("LINEBELOW", (0,0), (-1,0), 1, colors.HexColor("#40516A")),
+    ]))
+    totals = Table([["Subtotal", "PKR " + _fmt_major(payload["subtotal_minor"])],
+                    ["Discount", "PKR " + _fmt_major(payload["discount_minor"])],
+                    ["Total", "PKR " + _fmt_major(payload["total_minor"])]],
+                   colWidths=[120,160], hAlign="RIGHT")
+    totals.setStyle(TableStyle([
+        ("FONTNAME", (0,0), (-1,-1), "Helvetica"), ("FONTSIZE", (0,0), (-1,-1), 11),
+        ("ALIGN", (1,0), (1,-1), "RIGHT"),
+        ("TOPPADDING", (0,0), (-1,-1), 9), ("BOTTOMPADDING", (0,0), (-1,-1), 9),
+        ("BACKGROUND", (0,-1), (-1,-1), colors.HexColor("#142031")),
+        ("TEXTCOLOR", (0,-1), (-1,-1), colors.white),
+        ("FONTNAME", (0,-1), (-1,-1), "Helvetica-Bold"),
+    ]))
+    story += [table, Spacer(1,18), totals]
+    def footer(page_canvas, document):
+        page_canvas.saveState()
+        page_canvas.setFont("Helvetica", 8)
+        page_canvas.setFillColor(colors.HexColor("#526176"))
+        page_canvas.drawString(48, 30, "LeagueOps | " + _pdf_text(payload["order_id"], 50))
+        page_canvas.drawRightString(A4[0]-48, 30, "Page " + str(document.page))
+        page_canvas.restoreState()
+    doc.build(story, onFirstPage=footer, onLaterPages=footer)
     return buf.getvalue()
 
 
