@@ -1,6 +1,6 @@
 {
-  "source_sha": "ad49d49afc88c6e6ac2cc663945929bc51484be9",
-  "raw_report": "tests/reports/extended-coverage.json",
+  "source_sha": "e954d020c70eb90f52620b1e8906ce76b5cdf6fc",
+  "raw_report": "tests/reports/final-coverage.json",
   "scope": "Executable lines within all top-level functions in Day 2 API/domain and worker. Shared relay/main worker functions counted in moderation_dlq and observability. Module initialization and dependencies outside these source files are excluded; these percentages do not establish whole-stack or real-media acceptance.",
   "groups": {
     "streaming": [

@@ -1,5 +1,24 @@
 # Requirement Traceability
 
+## Final submission evidence - 18 October 2026, 14:15 PKT
+
+Source candidate e954d020c70eb90f52620b1e8906ce76b5cdf6fc completed the full
+suite: **463 passed, 17 skipped, 8 warnings in 226.51s**. Actual reports:
+tests/reports/final-tests.xml and final-coverage.json. Command: python -m pytest
+tests -q -p no:cacheprovider --cov=backend/app
+--cov-report=json:tests/reports/final-coverage.json
+--junitxml=tests/reports/final-tests.xml; isolated nascon_test PostgreSQL and
+Redis DB 0. COVERAGE_DAY2.json regenerated from this single final run using
+tests/day2/measure_coverage.py with explicit function mapping and scope.
+
+Clean Linux collection succeeded: 480 tests collected. Actual GitHub Actions run
+39114614108 passed dependency installation, private configuration validation and
+backend contract/regression tests. Full graded-stack startup then FAILED;
+downstream CI Grid/k6 steps were skipped. Local k6/Grid/Pixel results remain
+separate evidence, not a green CI claim. Investigating the stack failure after
+pushing the completed submission as explicitly requested by the user.
+
+
 ## Extended-deadline checkpoint - 18 October 2026, 14:10 PKT
 
 The user explicitly extended code/push authorization to **14:20 PKT**. This
