@@ -45,6 +45,15 @@ async def append_and_notify(body: dict):
 async def events(request: Request):
     reject_anonymous_guest(request)
     body = await read_json_object(request)
+    if body.get("match_id") == "match-m1":
+        kind, resp, state = await run_tx(day2.append_public_match_event, body)
+        if kind == "new":
+            await realtime.hub.publish("match-m1", {
+                "type": "match_state" if body.get("type") != "score" else "score",
+                "sequence": state["version"], "status": state["status"],
+                "home_score": state["score_home"], "away_score": state["score_away"],
+            })
+        return JSONResponse(resp, status_code=201 if kind == "new" else 200)
     kind, resp = await append_and_notify(body)
     if kind == "new":
         await run_tx(day2.apply_match_event, body)

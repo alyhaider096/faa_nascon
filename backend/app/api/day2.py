@@ -9,12 +9,19 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.concurrency import run_in_threadpool
 
-from ..core.security import reject_anonymous_guest
+from ..core import realtime
+from ..core.errors import DomainError
+from ..core.security import authenticate, forbidden, reject_anonymous_guest
 from ..core.validation import read_json_object
 from ..domain import day2
 from .common import run_tx
 
 router = APIRouter()
+
+
+def _bearer(request: Request) -> str | None:
+    header = request.headers.get("authorization", "")
+    return header[7:] if header.lower().startswith("bearer ") and header[7:] else None
 
 
 def _kick_media_publishers(stream_key: str) -> None:
@@ -40,10 +47,25 @@ def _kick_media_publishers(stream_key: str) -> None:
 
 @router.post("/audit/v1/stream/key")
 async def stream_key(request: Request):
-    status, response, revoked = await run_tx(day2.stream_key, await read_json_object(request))
+    return await _stream_key_response(await read_json_object(request))
+
+
+async def _stream_key_response(body: dict):
+    status, response, revoked = await run_tx(day2.stream_key, body)
     for old_key in revoked:
         await run_in_threadpool(_kick_media_publishers, old_key)
     return JSONResponse(response, status_code=status)
+
+
+@router.post("/api/v1/stream/key")
+async def production_stream_key(request: Request):
+    claims = authenticate(request)
+    body = await read_json_object(request)
+    if claims.role == "player" and body.get("player_id") != claims.player_id:
+        raise forbidden()
+    if claims.role not in {"player", "league_organizer", "super_admin"}:
+        raise forbidden()
+    return await _stream_key_response(body)
 
 
 @router.post("/audit/v1/costream/session")
@@ -72,7 +94,14 @@ async def qr_redirect(short_code: str):
 
 @router.post("/audit/v1/guest/cart-merge")
 async def cart_merge(request: Request):
-    return await run_tx(day2.cart_merge, await read_json_object(request))
+    reject_anonymous_guest(request)
+    body = await read_json_object(request)
+    token = _bearer(request)
+    if token:
+        claims = authenticate(request)
+        if body.get("registered_user_id") not in {claims.user_id, claims.player_id}:
+            raise forbidden("The cart can only be merged into the authenticated account.")
+    return await run_tx(day2.cart_merge, body)
 
 
 @router.post("/audit/v1/moderation/test")
@@ -90,11 +119,65 @@ async def privacy(user_id: str):
     return await run_tx(day2.erase_user, user_id)
 
 
+@router.get("/api/v1/public/matches/{match_id}")
+async def public_match(match_id: str):
+    return await run_tx(day2.public_match, match_id)
+
+
+@router.get("/api/v1/public/costream/{session_id}")
+async def public_costream(session_id: str):
+    return await run_tx(day2.public_costream, session_id)
+
+
+@router.get("/api/v1/players/{player_id}")
+async def player_profile(player_id: str):
+    return await run_tx(day2.public_profile, "player", player_id)
+
+
+@router.get("/api/v1/public/clubs/{club_id}")
+async def public_club_profile(club_id: str):
+    return await run_tx(day2.public_profile, "club", club_id)
+
+
+@router.post("/api/v1/follows")
+async def follow(request: Request):
+    claims = authenticate(request)
+    return await run_tx(day2.update_follow, claims.user_id, await read_json_object(request))
+
+
+@router.post("/api/v1/guest/session")
+async def guest_session():
+    return JSONResponse(await run_tx(day2.create_guest_session), status_code=201)
+
+
+@router.post("/api/v1/guest/cart")
+async def guest_cart(request: Request):
+    token = _bearer(request)
+    if not token or not token.startswith("guest_"):
+        raise DomainError(401, "UNAUTHENTICATED", "A guest bearer token is required.")
+    return await run_tx(day2.stage_guest_cart, token, await read_json_object(request))
+
+
+@router.get("/api/v1/chat/{chat_room_id}")
+async def chat_messages(chat_room_id: str, request: Request):
+    token = _bearer(request)
+    if token and not token.startswith("guest_"):
+        authenticate(request)
+        token = None
+    return await run_tx(day2.chat_history, chat_room_id, token)
+
+
 @router.post("/api/v1/chat")
 async def chat(request: Request):
     reject_anonymous_guest(request)
-    await read_json_object(request)
-    return JSONResponse({"status": "accepted"}, status_code=201)
+    claims = authenticate(request)
+    body = await read_json_object(request)
+    message = await run_tx(day2.post_chat, body.get("chat_room_id"), body.get("message_id"),
+                           claims.user_id, body.get("text"))
+    room = body.get("chat_room_id", "")
+    channel = room[5:] if room.startswith("chat-") else room
+    await realtime.hub.publish(channel, {"type": "chat", "sequence": message["sequence"], "message": message})
+    return JSONResponse({"status": "accepted", "message": message}, status_code=201)
 
 
 @router.post("/internal/media/auth", include_in_schema=False)

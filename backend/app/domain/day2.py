@@ -17,7 +17,7 @@ from reportlab.pdfgen import canvas
 
 from ..core.errors import DomainError, validation_error
 from ..core.config import get_settings
-from ..core.signing import request_hash, sign_day2
+from ..core.signing import request_hash, sign_day2, sign_record
 from ..core.validation import is_int
 
 STREAM_RE = re.compile(r"^sk_live_[a-f0-9]{16}$")
@@ -33,6 +33,11 @@ def _player_exists(conn, player_id: str) -> bool:
 
 def _player_not_found(player_id: str) -> DomainError:
     return DomainError(404, "PLAYER_NOT_FOUND", f"Player {player_id} does not exist.", {"player_id": player_id})
+
+
+def _registered_exists(conn, identity: str) -> bool:
+    return (_player_exists(conn, identity) or
+            conn.execute("SELECT 1 FROM users WHERE user_id=%s", (identity,)).fetchone() is not None)
 
 
 def _stream_response(player_id: str, label: str, stream_key: str, status: str, action: str) -> dict:
@@ -237,7 +242,7 @@ def cart_merge(conn, body: dict) -> dict:
              not is_int(i.get("quantity")) or i["quantity"] < 1 for i in items): fields.append("guest_cart")
     if type(test_block) is not bool: fields.append("test_write_block")
     if fields: raise validation_error(fields)
-    if not _player_exists(conn, user_id): raise _player_not_found(user_id)
+    if not _registered_exists(conn, user_id): raise _player_not_found(user_id)
     requested: OrderedDict[str, int] = OrderedDict()
     for item in items: requested[item["variant_id"]] = requested.get(item["variant_id"], 0) + item["quantity"]
     variants = {}
@@ -373,3 +378,220 @@ def apply_match_event(conn, body: dict) -> None:
     if match_id != "match-m1": return
     if event_type == "match_end":
         conn.execute("UPDATE day2_match_state SET status='completed' WHERE match_id=%s", (match_id,))
+
+
+# ---------------------------------------------------------------- production/public -------
+def _valid_guest(conn, guest_token: str) -> dict:
+    row = conn.execute(
+        "SELECT * FROM day2_guest_tokens WHERE guest_token=%s AND valid=true", (guest_token,)
+    ).fetchone()
+    if row is None:
+        raise DomainError(401, "UNAUTHENTICATED", "Invalid, expired or tampered guest token.")
+    return row
+
+
+def create_guest_session(conn) -> dict:
+    guest_token = "guest_anon_" + secrets.token_hex(16)
+    conn.execute("INSERT INTO day2_guest_tokens(guest_token) VALUES (%s)", (guest_token,))
+    return {"guest_token": guest_token}
+
+
+def stage_guest_cart(conn, guest_token: str, body: dict) -> dict:
+    _valid_guest(conn, guest_token)
+    items = body.get("items")
+    if (not isinstance(items, list) or len(items) > 10 or
+            any(not isinstance(item, dict) or not isinstance(item.get("variant_id"), str) or
+                not is_int(item.get("quantity")) or item["quantity"] < 1 for item in items)):
+        raise validation_error(["items"])
+    merged: OrderedDict[str, int] = OrderedDict()
+    for item in items:
+        merged[item["variant_id"]] = merged.get(item["variant_id"], 0) + item["quantity"]
+    if merged:
+        rows = conn.execute("SELECT variant_id FROM variants WHERE variant_id = ANY(%s)",
+                            (list(merged),)).fetchall()
+        found = {row["variant_id"] for row in rows}
+        missing = next((variant_id for variant_id in merged if variant_id not in found), None)
+        if missing:
+            raise DomainError(404, "VARIANT_NOT_FOUND", "Inventory variant does not exist.",
+                              {"variant_id": missing})
+    conn.execute("DELETE FROM day2_guest_cart_items WHERE guest_token=%s", (guest_token,))
+    for variant_id, quantity in merged.items():
+        conn.execute(
+            "INSERT INTO day2_guest_cart_items(guest_token,variant_id,quantity) VALUES (%s,%s,%s)",
+            (guest_token, variant_id, quantity),
+        )
+    return {"guest_token": guest_token, "items": [
+        {"variant_id": variant_id, "quantity": quantity} for variant_id, quantity in merged.items()
+    ], "total_items": sum(merged.values())}
+
+
+def _product(conn, product_id: str) -> dict | None:
+    product = conn.execute("SELECT * FROM products WHERE product_id=%s AND active=true", (product_id,)).fetchone()
+    if product is None:
+        return None
+    variants = conn.execute(
+        "SELECT variant_id,attributes,price_minor,currency,stock,reserved FROM variants "
+        "WHERE product_id=%s ORDER BY variant_id", (product_id,)
+    ).fetchall()
+    return {**product, "variants": variants}
+
+
+def public_match(conn, match_id: str) -> dict:
+    state = conn.execute("SELECT * FROM day2_match_state WHERE match_id=%s", (match_id,)).fetchone()
+    if state is None:
+        raise DomainError(404, "MATCH_NOT_FOUND", f"Match {match_id} does not exist.", {"match_id": match_id})
+    clubs = conn.execute(
+        "SELECT club_id,name FROM ref_clubs WHERE club_id = ANY(%s) ORDER BY club_id",
+        (["club-alpha-1", "club-alpha-2"],),
+    ).fetchall()
+    names = {club["club_id"]: club["name"] for club in clubs}
+    events = conn.execute(
+        "SELECT event_id,sequence,event_type,payload,created_at FROM day2_match_events "
+        "WHERE match_id=%s ORDER BY sequence", (match_id,)
+    ).fetchall()
+    stream = conn.execute(
+        "SELECT stream_key FROM day2_stream_keys WHERE status='active' ORDER BY created_at DESC LIMIT 1"
+    ).fetchone()
+    media_host = get_settings().media_public_host
+    playback = (f"http://{media_host}:8888/live/{stream['stream_key']}/index.m3u8" if stream else None)
+    product = _product(conn, "prod-jersey-001")
+    return {
+        "match_id": match_id, "status": state["status"], "version": state["version"],
+        "title": f"{names.get('club-alpha-1', 'Alpha FC')} vs {names.get('club-alpha-2', 'Alpha United')}",
+        "league_id": "league-alpha-1", "league_name": "Alpha Premier League",
+        "home": {"team_id": "club-alpha-1", "name": names.get("club-alpha-1", "Alpha FC"),
+                 "score": state["score_home"]},
+        "away": {"team_id": "club-alpha-2", "name": names.get("club-alpha-2", "Alpha United"),
+                 "score": state["score_away"]},
+        "playback_url": playback, "chat_room_id": f"chat-{match_id}",
+        "timeline": [{"event_id": event["event_id"], "sequence": event["sequence"],
+                      "type": event["event_type"], "payload": event["payload"],
+                      "created_at": event["created_at"].isoformat()} for event in events],
+        "pinned_product": product,
+    }
+
+
+def public_costream(conn, session_id: str) -> dict:
+    row = conn.execute("SELECT response FROM day2_costream_sessions WHERE session_id=%s", (session_id,)).fetchone()
+    if row is None:
+        raise DomainError(404, "STREAM_NOT_FOUND", "Co-stream session does not exist.",
+                          {"session_id": session_id})
+    return row["response"]
+
+
+def public_profile(conn, entity_type: str, entity_id: str) -> dict:
+    if entity_type == "player":
+        row = conn.execute(
+            "SELECT p.player_id id,p.name,c.name club_name FROM ref_players p "
+            "JOIN ref_clubs c ON c.club_id=p.club_id WHERE p.player_id=%s", (entity_id,)
+        ).fetchone()
+        code = "PLAYER_NOT_FOUND"
+    else:
+        row = conn.execute("SELECT club_id id,name,venue FROM ref_clubs WHERE club_id=%s", (entity_id,)).fetchone()
+        code = "CLUB_NOT_FOUND"
+    if row is None:
+        raise DomainError(404, code, f"{entity_type.title()} {entity_id} does not exist.", {"id": entity_id})
+    followers = conn.execute(
+        "SELECT count(*) n FROM day2_follows WHERE entity_type=%s AND entity_id=%s", (entity_type, entity_id)
+    ).fetchone()["n"]
+    return {**row, "followers": followers, "career_matches": [], "upcoming_fixtures": [], "vod_archive": []}
+
+
+def update_follow(conn, user_id: str, body: dict) -> dict:
+    entity_type, entity_id, action = body.get("entity_type"), body.get("entity_id"), body.get("action")
+    fields = []
+    if entity_type not in {"player", "club"}: fields.append("entity_type")
+    if not isinstance(entity_id, str) or not entity_id: fields.append("entity_id")
+    if action not in {"follow", "unfollow"}: fields.append("action")
+    if fields: raise validation_error(fields)
+    public_profile(conn, entity_type, entity_id)
+    if action == "follow":
+        conn.execute("INSERT INTO day2_follows(user_id,entity_type,entity_id) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING",
+                     (user_id, entity_type, entity_id))
+    else:
+        conn.execute("DELETE FROM day2_follows WHERE user_id=%s AND entity_type=%s AND entity_id=%s",
+                     (user_id, entity_type, entity_id))
+    followers = conn.execute(
+        "SELECT count(*) n FROM day2_follows WHERE entity_type=%s AND entity_id=%s", (entity_type, entity_id)
+    ).fetchone()["n"]
+    return {"following": action == "follow", "followers": followers}
+
+
+def chat_history(conn, chat_room_id: str, guest_token: str | None) -> dict:
+    if guest_token:
+        _valid_guest(conn, guest_token)
+    rows = conn.execute(
+        "SELECT message_id,sequence,result,created_at FROM day2_moderation_messages "
+        "WHERE chat_room_id=%s ORDER BY sequence LIMIT 100", (chat_room_id,)
+    ).fetchall()
+    return {"chat_room_id": chat_room_id, "messages": [
+        {**row["result"], "sequence": row["sequence"], "created_at": row["created_at"].isoformat()}
+        for row in rows
+    ]}
+
+
+def post_chat(conn, chat_room_id: str, message_id: str, sender: str, text: str) -> dict:
+    if not all(isinstance(value, str) and value for value in (chat_room_id, message_id, sender, text)):
+        raise validation_error(["chat_room_id", "message_id", "text"])
+    masked, flagged = _mask_profanity(text)
+    if re.search(r"(.)\1{3,}", text, re.IGNORECASE) or re.search(r"[!?]{3,}", text):
+        conn.execute("INSERT INTO day2_sanctions(chat_room_id,user_id,sanction) VALUES (%s,%s,'muted') ON CONFLICT DO NOTHING",
+                     (chat_room_id, sender))
+        raise DomainError(429, "RATE_LIMITED", "Chat flood threshold exceeded.")
+    result = {"message_id": message_id, "sender": sender, "text": masked,
+              "flagged": flagged, "reason": "profanity_leetspeak" if flagged else None}
+    conn.execute(
+        "INSERT INTO day2_moderation_messages(chat_room_id,message_id,result) VALUES (%s,%s,%s) "
+        "ON CONFLICT(chat_room_id,message_id) DO NOTHING", (chat_room_id, message_id, Jsonb(result))
+    )
+    row = conn.execute(
+        "SELECT sequence,result,created_at FROM day2_moderation_messages WHERE chat_room_id=%s AND message_id=%s",
+        (chat_room_id, message_id),
+    ).fetchone()
+    if flagged:
+        conn.execute("INSERT INTO day2_sanctions(chat_room_id,user_id,sanction) VALUES (%s,%s,'kicked') ON CONFLICT DO NOTHING",
+                     (chat_room_id, sender))
+    return {**row["result"], "sequence": row["sequence"], "created_at": row["created_at"].isoformat()}
+
+
+def append_public_match_event(conn, body: dict) -> tuple[str, dict, dict]:
+    fields = []
+    event_id, match_id, event_type, payload = (body.get("event_id"), body.get("match_id"),
+                                                body.get("type"), body.get("payload"))
+    if not isinstance(event_id, str) or not event_id: fields.append("event_id")
+    if match_id != "match-m1": fields.append("match_id")
+    if event_type not in {"score", "match_end", "match_postponed"}: fields.append("type")
+    if not isinstance(payload, dict): fields.append("payload")
+    if fields: raise validation_error(fields)
+    identity = request_hash(body)
+    prior = conn.execute("SELECT request_hash,response FROM day2_match_events WHERE event_id=%s", (event_id,)).fetchone()
+    if prior:
+        if prior["request_hash"] != identity:
+            raise DomainError(409, "DUPLICATE_EVENT_ID", "Event ID was already used with different content.")
+        state = conn.execute("SELECT * FROM day2_match_state WHERE match_id=%s", (match_id,)).fetchone()
+        return "replay", prior["response"], state
+    state = conn.execute("SELECT * FROM day2_match_state WHERE match_id=%s FOR UPDATE", (match_id,)).fetchone()
+    if state is None:
+        raise DomainError(404, "MATCH_NOT_FOUND", "Match does not exist.", {"match_id": match_id})
+    if event_type == "score":
+        if state["status"] != "in_progress": raise DomainError(409, "MATCH_NOT_IN_PROGRESS")
+        team = payload.get("team_id")
+        if team not in {"club-alpha-1", "club-alpha-2"}: raise validation_error(["payload.team_id"])
+        column = "score_home" if team == "club-alpha-1" else "score_away"
+        conn.execute(f"UPDATE day2_match_state SET {column}={column}+1,version=version+1 WHERE match_id=%s", (match_id,))
+    elif event_type == "match_end":
+        if state["status"] != "in_progress": raise DomainError(409, "ILLEGAL_TRANSITION")
+        conn.execute("UPDATE day2_match_state SET status='completed',version=version+1 WHERE match_id=%s", (match_id,))
+    else:
+        if state["status"] not in {"upcoming", "in_progress"}: raise DomainError(409, "ILLEGAL_TRANSITION")
+        conn.execute("UPDATE day2_match_state SET status='postponed',version=version+1 WHERE match_id=%s", (match_id,))
+    state = conn.execute("SELECT * FROM day2_match_state WHERE match_id=%s", (match_id,)).fetchone()
+    response = {"event_id": event_id, "match_id": match_id, "type": event_type,
+                "sequence": state["version"], "match_version": state["version"],
+                "signature": sign_record(event_id, payload)}
+    conn.execute(
+        "INSERT INTO day2_match_events(event_id,match_id,request_hash,sequence,event_type,payload,response) "
+        "VALUES (%s,%s,%s,%s,%s,%s,%s)",
+        (event_id, match_id, identity, state["version"], event_type, Jsonb(payload), Jsonb(response)),
+    )
+    return "new", response, state

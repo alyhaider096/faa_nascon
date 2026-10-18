@@ -56,6 +56,13 @@ def _mount_optional(app: FastAPI, module: str) -> None:
         app.include_router(router)
 
 
+def _guest_token_valid(token: str) -> bool:
+    with db.tx() as conn:
+        return conn.execute(
+            "SELECT 1 FROM day2_guest_tokens WHERE guest_token=%s AND valid=true", (token,)
+        ).fetchone() is not None
+
+
 def create_app() -> FastAPI:
     settings = get_settings()          # raises a clear ConfigError when DAY1_SALT is missing
     app = FastAPI(title="LeagueOps API", version="1.0", lifespan=lifespan,
@@ -68,14 +75,17 @@ def create_app() -> FastAPI:
     _mount_optional(app, "app.api.domain_audit")
     _mount_optional(app, "app.api.domain_mobile")
 
-    @app.websocket("/ws/v1/matches/{match_id}")
-    async def match_socket(ws: WebSocket, match_id: str):
+    async def serve_match_socket(ws: WebSocket, match_id: str, *, guests: bool) -> None:
         token = ws.query_params.get("token")
         if not token:
             auth = ws.headers.get("authorization", "")
             token = auth[7:] if auth.lower().startswith("bearer ") else None
         try:
-            decode_token(token or "")
+            if guests and (token or "").startswith("guest_"):
+                if not await run_in_threadpool(_guest_token_valid, token):
+                    raise DomainError(401, "UNAUTHENTICATED")
+            else:
+                decode_token(token or "")
         except DomainError:
             await ws.close(code=4401)
             return
@@ -91,6 +101,14 @@ def create_app() -> FastAPI:
             pass
         finally:
             realtime.hub.disconnect(match_id, ws)
+
+    @app.websocket("/ws/v1/matches/{match_id}")
+    async def match_socket(ws: WebSocket, match_id: str):
+        await serve_match_socket(ws, match_id, guests=False)
+
+    @app.websocket("/ws/matches/{match_id}")
+    async def public_match_socket(ws: WebSocket, match_id: str):
+        await serve_match_socket(ws, match_id, guests=True)
 
     # CORS is added last so it is outermost and preflights never reach route/method handling.
     app.add_middleware(BodyLimitMiddleware, settings=settings)

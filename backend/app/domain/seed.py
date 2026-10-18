@@ -141,9 +141,9 @@ USERS = [
 ]
 
 TRUNCATE = (
-    "TRUNCATE day2_dlq, day2_sanctions, day2_moderation_messages, day2_merge_receipts,"
-    " day2_cart_items, day2_carts, day2_guest_tokens, day2_qr_scan_buckets, day2_qr_mappings,"
-    " day2_costream_sessions, day2_stream_keys, day2_match_state,"
+    "TRUNCATE day2_follows, day2_guest_cart_items, day2_match_events, day2_dlq, day2_sanctions,"
+    " day2_moderation_messages, day2_merge_receipts, day2_cart_items, day2_carts, day2_guest_tokens,"
+    " day2_qr_scan_buckets, day2_qr_mappings, day2_costream_sessions, day2_stream_keys, day2_match_state,"
     " outbox, offline_actions, roster_requests, roster_audit, roster_matches, roster_players,"
     " roster_squads, roster_leagues, order_items, orders, price_schedule, discount_codes, variants,"
     " products, users, ref_players, ref_clubs, ref_leagues, sports, tenants, seed_state"
