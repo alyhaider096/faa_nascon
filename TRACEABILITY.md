@@ -1,5 +1,34 @@
 # Requirement Traceability
 
+## Day 2 QA baseline - 18 October 2026
+
+Baseline inspected: `c9ad86fb44730cb02f3556727596ceec8b4530fa`.
+The Day 1 records below are preserved historical claims, not new execution results.
+No Day 2 live acceptance pass is claimed. Evidence: `tests/reports/EVIDENCE.md`.
+
+| Requirement | Source / implementation status at baseline | Automated verification | Live evidence | Current state |
+| --- | --- | --- | --- | --- |
+| FR-3.1 Athlete identity and social graph | Day 2 implementation not found | Profile/VOD and concurrent follow suite pending | None | Not run |
+| FR-3.2 Solo streaming and overlays | Day 2 stream service not found; existing `backend/app/core/realtime.py` needs integration review | `tests/day2/signing_oracle.py` supplies independent signing; live key/media suite pending | None | Partial QA tooling; acceptance not run |
+| FR-3.3 Four-way co-stream and handoff | Day 2 implementation not found | Capacity, layout, replay and real host-drop suite pending | None | Not run |
+| FR-4.1 Dynamic cryptographic QR | Day 2 implementation not found | Independent oracle available; state-transition, export and scan-race suite pending | None | Partial QA tooling; acceptance not run |
+| FR-4.2 Zero-account guest experience | Guest web implementation not found | Grid initial-load and cart staging suite pending | None | Not run |
+| FR-4.3 Guest write boundary | Existing `backend/app/core/security.py` needs Day 2 guest checks | Direct chat/checkout/event rejection and member controls pending | None | Not run |
+| FR-4.4 Progressive registration and atomic merge | Day 2 implementation not found | Oracle extracts active-cart signing fields; atomicity/replay/stock suite pending | None | Partial QA tooling; acceptance not run |
+| FR-5.2 Notification bus and DLQ | Existing `backend/app/core/queue.py` needs Day 2 contract review | Durable retry, depth and restart/concurrency suite pending | None | Not run |
+| FR-5.3 Automated moderation | Day 2 implementation not found | Oracle requires explicit flagged_count; dictionary/flood/race suite pending | None | Partial QA tooling; acceptance not run |
+| NFR-1 Score latency | Existing `backend/app/core/realtime.py` | 25-client p95 probe pending | None | Not run |
+| NFR-2 Concurrency scale | Deployed target not provided | Exact 550-VU k6 profile pending | None | Not run |
+| NFR-6 Observability | Day 2 metrics not found | Prometheus parsing and transition probes pending | None | Not run |
+| NFR-8 Guest accessibility | Guest web implementation not found | Grid keyboard/contrast/ARIA/target checks pending | None | Not run |
+| NFR-9 Privacy | Day 2 erase/telemetry implementation not found | PII/token deletion timing and telemetry inspection pending | None | Not run |
+
+`COVERAGE_DAY2.json` will be generated only from actual module coverage after
+the five Day 2 modules are identified. Missing measurements are not zero or a pass.
+Oracle self-checks do not count as production module coverage or live acceptance.
+
+## Preserved Day 1 records
+
 Domain implementation and tests are available on the backend/fatima-domain branch.
 Status distinguishes tested services from host/mobile integration still pending.
 

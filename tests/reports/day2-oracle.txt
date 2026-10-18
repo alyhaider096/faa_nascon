@@ -1,0 +1,10 @@
+test_canonical_bytes (test_signing_oracle.OracleTests.test_canonical_bytes) ... ok
+test_cart_excludes_unsigned_fields_and_uses_active_total (test_signing_oracle.OracleTests.test_cart_excludes_unsigned_fields_and_uses_active_total) ... ok
+test_missing_signed_fields_fail (test_signing_oracle.OracleTests.test_missing_signed_fields_fail) ... ok
+test_qr_target_changes_signature (test_signing_oracle.OracleTests.test_qr_target_changes_signature) ... ok
+test_rfc4231_hmac_vector_through_exact_message (test_signing_oracle.OracleTests.test_rfc4231_hmac_vector_through_exact_message) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK
