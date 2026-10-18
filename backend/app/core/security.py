@@ -95,6 +95,18 @@ def authenticate(request: Request) -> Claims:
     return decode_token(parts[1])
 
 
+def reject_anonymous_guest(request: Request) -> None:
+    """Enforce the Phase II read-only guest boundary before a mutation parses its body."""
+    header = request.headers.get("authorization", "")
+    token = header[7:] if header.lower().startswith("bearer ") else ""
+    if token.startswith("guest_"):
+        raise DomainError(
+            403, "GUEST_WRITE_FORBIDDEN",
+            "Anonymous guest tokens cannot perform write mutations.",
+            {"guest_token": token},
+        )
+
+
 # Passwords ---------------------------------------------------------------------------------
 _PBKDF2_ROUNDS = 60_000
 

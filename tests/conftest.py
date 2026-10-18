@@ -22,6 +22,7 @@ sys.path.insert(0, str(ROOT))
 # Public demo salt for tests only (Appendix A vector). The real team salt is never used in tests.
 TEST_SALT = "demo-salt"
 os.environ["DAY1_SALT"] = TEST_SALT
+os.environ["DAY2_SALT"] = TEST_SALT
 os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL", "postgresql://nascon@127.0.0.1:5432/nascon")
 os.environ.setdefault("REDIS_URL", os.environ.get("TEST_REDIS_URL", "redis://127.0.0.1:6379/0"))
 

@@ -57,9 +57,13 @@ def test_salt_is_required_and_not_in_repr():
         load_settings({})
     with pytest.raises(ConfigError):
         load_settings({"DAY1_SALT": ""})
-    s = load_settings({"DAY1_SALT": "TOP-SECRET-VALUE"})
+    with pytest.raises(ConfigError):
+        load_settings({"DAY1_SALT": "TOP-SECRET-VALUE"})
+    s = load_settings({"DAY1_SALT": "TOP-SECRET-VALUE", "DAY2_SALT": "SECOND-SECRET"})
     assert "TOP-SECRET-VALUE" not in repr(s)
+    assert "SECOND-SECRET" not in repr(s)
     assert s.day1_salt == "TOP-SECRET-VALUE"          # never trimmed/decoded
+    assert s.day2_salt == "SECOND-SECRET"
 
 
 def test_get_settings_reads_environment_once():

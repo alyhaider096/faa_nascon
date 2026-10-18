@@ -61,8 +61,9 @@ def create_app() -> FastAPI:
     app = FastAPI(title="LeagueOps API", version="1.0", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     install_error_handlers(app)
-    from .api import audit, mobile
+    from .api import audit, day2, mobile
     app.include_router(audit.router)
+    app.include_router(day2.router)
     app.include_router(mobile.router)
     _mount_optional(app, "app.api.domain_audit")
     _mount_optional(app, "app.api.domain_mobile")

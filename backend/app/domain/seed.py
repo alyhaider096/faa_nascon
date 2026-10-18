@@ -84,7 +84,8 @@ CLUBS = [
 
 PLAYERS = [("player-alpha-1", "club-alpha-1", "tenant-alpha", "Alpha Player One"),
            ("player-alpha-2", "club-alpha-2", "tenant-alpha", "Alpha Player Two"),
-           ("player-beta-1", "club-beta-1", "tenant-beta", "Beta Player One")]
+           ("player-beta-1", "club-beta-1", "tenant-beta", "Beta Player One"),
+           ("player-beta-2", "club-beta-1", "tenant-beta", "Beta Player Two")]
 
 # The mobile demo follows these IDs from bootstrap -> standings/match/club -> roster history.
 # Keep them deterministic so /reset always restores the same navigable live-data graph.
@@ -140,7 +141,10 @@ USERS = [
 ]
 
 TRUNCATE = (
-    "TRUNCATE outbox, offline_actions, roster_requests, roster_audit, roster_matches, roster_players,"
+    "TRUNCATE day2_dlq, day2_sanctions, day2_moderation_messages, day2_merge_receipts,"
+    " day2_cart_items, day2_carts, day2_guest_tokens, day2_qr_scan_buckets, day2_qr_mappings,"
+    " day2_costream_sessions, day2_stream_keys, day2_match_state,"
+    " outbox, offline_actions, roster_requests, roster_audit, roster_matches, roster_players,"
     " roster_squads, roster_leagues, order_items, orders, price_schedule, discount_codes, variants,"
     " products, users, ref_players, ref_clubs, ref_leagues, sports, tenants, seed_state"
     " RESTART IDENTITY CASCADE"
@@ -177,6 +181,7 @@ def reset(conn, seed: int = DEFAULT_SEED, stock: dict[str, int] | None = None) -
     conn.execute(TRUNCATE)
     conn.execute("ALTER SEQUENCE payment_seq RESTART WITH 1")
     conn.execute("ALTER SEQUENCE roster_audit_seq RESTART WITH 1")
+    conn.execute("ALTER SEQUENCE day2_dlq_id_seq RESTART WITH 1")
 
     for tid, name, branding in TENANTS:
         conn.execute("INSERT INTO tenants (tenant_id, name, branding) VALUES (%s,%s,%s)",
@@ -215,6 +220,18 @@ def reset(conn, seed: int = DEFAULT_SEED, stock: dict[str, int] | None = None) -
             " VALUES (%s,'prod-jersey-001',%s,450000,'PKR',%s,0)",
             (vid, Jsonb({"size": size, "color": "blue"}), stock[vid]))
     conn.execute("INSERT INTO discount_codes (code, percent, active) VALUES ('WELCOME10', 10, true)")
+
+    conn.execute("INSERT INTO day2_match_state(match_id,status,score_home,score_away) "
+                 "VALUES ('match-m1','in_progress',1,0)")
+    for entity_id, entity_type, short_code in (
+        ("match-m1", "match", "m1-live"),
+        ("player-alpha-1", "player", "p-alpha-1"),
+        ("club-alpha-1", "club", "c-alpha-1"),
+    ):
+        conn.execute("INSERT INTO day2_qr_mappings(entity_id,entity_type,short_code) VALUES (%s,%s,%s)",
+                     (entity_id, entity_type, short_code))
+    conn.execute("INSERT INTO day2_guest_tokens(guest_token) VALUES ('guest_anon_tok_7721')")
+    conn.execute("INSERT INTO day2_carts(user_id) VALUES ('player-alpha-1')")
 
     conn.execute("INSERT INTO seed_state (id, seed) VALUES (1, %s)", (seed,))
     hooks = ports.run_reset_hooks(conn, seed)       # scoring/standings owners clear their own state

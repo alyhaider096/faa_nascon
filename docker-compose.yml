@@ -10,6 +10,8 @@ services:
     command: ["postgres", "-c", "max_connections=200"]
     volumes:
       - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U nascon -d nascon"]
       interval: 3s
@@ -22,6 +24,8 @@ services:
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redisdata:/data
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s
@@ -33,8 +37,12 @@ services:
     build: ./backend
     environment:
       DAY1_SALT: ${DAY1_SALT}
+      DAY2_SALT: ${DAY2_SALT}
       DATABASE_URL: postgresql://nascon:nascon@db:5432/nascon
       REDIS_URL: redis://redis:6379/0
+      CHECK_RUNTIME_DEPENDENCIES: "1"
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
+      MEDIA_PUBLIC_HOST: ${MEDIA_PUBLIC_HOST:-localhost}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:19006,http://127.0.0.1:19006}
     ports:
       - "8080:8080"
@@ -42,6 +50,10 @@ services:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      media:
+        condition: service_started
+      minio:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3).status == 200 else 1)"]
@@ -56,8 +68,11 @@ services:
     command: ["python", "-m", "app.worker"]
     environment:
       DAY1_SALT: ${DAY1_SALT}
+      DAY2_SALT: ${DAY2_SALT}
       DATABASE_URL: postgresql://nascon:nascon@db:5432/nascon
       REDIS_URL: redis://redis:6379/0
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
+      MEDIA_PUBLIC_HOST: ${MEDIA_PUBLIC_HOST:-localhost}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:19006,http://127.0.0.1:19006}
     depends_on:
       api:
@@ -66,22 +81,100 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # Optional self-hosted object store (approved component). It is behind a profile so that a
-  # registry hiccup on this image can never break the graded one-command start:
-  #   docker compose --profile objectstore up -d
-  # Receipts are authoritative in PostgreSQL either way.
   minio:
-    image: minio/minio:latest
-    profiles: ["objectstore"]
+    image: public.ecr.aws/y9w4h2u9/minio:RELEASE.2025-09-07T16-13-09Z
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
-      MINIO_ROOT_USER: nascon
-      MINIO_ROOT_PASSWORD: nascon-minio-dev
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-nascon}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-nascon-minio-dev}
     volumes:
       - miniodata:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    restart: unless-stopped
+
+  media:
+    image: bluenviron/mediamtx:1.21.2
+    environment:
+      MTX_AUTHMETHOD: http
+      MTX_AUTHHTTPADDRESS: http://api:8080/internal/media/auth
+      MTX_API: "yes"
+      MTX_HLS: "yes"
+      MTX_WEBRTC: "yes"
+      MTX_PATHDEFAULTS_RECORD: "yes"
+      MTX_PATHDEFAULTS_RECORDPATH: /recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+    volumes:
+      - mediarecordings:/recordings
+    ports:
+      - "1935:1935"
+      - "8888:8888"
+      - "8889:8889"
+      - "8189:8189/udp"
+    restart: unless-stopped
+
+  selenium-hub:
+    image: ${SELENIUM_HUB_IMAGE:-selenium/hub:4.25.0}
+    ports:
+      - "4442:4442"
+      - "4443:4443"
+      - "4444:4444"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:4444/status"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    restart: unless-stopped
+
+  node-chrome-1: &selenium-chrome
+    image: ${SELENIUM_CHROME_IMAGE:-selenium/node-chrome:4.25.0}
+    shm_size: "1gb"
+    environment: &selenium-node-env
+      SE_EVENT_BUS_HOST: selenium-hub
+      SE_EVENT_BUS_PUBLISH_PORT: 4442
+      SE_EVENT_BUS_SUBSCRIBE_PORT: 4443
+      SE_NODE_MAX_SESSIONS: 2
+      SE_START_VNC: "false"
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    restart: unless-stopped
+
+  node-chrome-2:
+    <<: *selenium-chrome
+
+  node-firefox:
+    image: ${SELENIUM_FIREFOX_IMAGE:-selenium/node-firefox:4.25.0}
+    shm_size: "1gb"
+    environment: *selenium-node-env
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    restart: unless-stopped
+
+  appium:
+    image: appium/appium:latest
+    platform: linux/amd64
+    privileged: true
+    ports:
+      - "4723:4723"
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4723/status').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 4s
+      retries: 40
+      start_period: 20s
     restart: unless-stopped
 
 volumes:
   pgdata:
   redisdata:
   miniodata:
+  mediarecordings:

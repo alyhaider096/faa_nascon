@@ -1,0 +1,49 @@
+name: Day 2 autograde
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  backend-grid-load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DAY1_SALT: ${{ secrets.DAY1_SALT }}
+      DAY2_SALT: ${{ secrets.DAY2_SALT }}
+      TEST_DATABASE_URL: postgresql://nascon:nascon@127.0.0.1:5432/nascon
+      TEST_REDIS_URL: redis://127.0.0.1:6379/0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+      - name: Validate required private configuration
+        run: test -n "$DAY1_SALT" && test -n "$DAY2_SALT"
+      - name: Start test persistence services
+        run: docker compose up -d --wait db redis
+      - name: Backend contract and regression tests
+        run: mkdir -p tests/reports && pytest -q --junitxml=tests/reports/backend-report.xml
+      - name: Start the complete graded stack
+        run: docker compose up -d --build --wait --wait-timeout 120
+      - name: Verify API and three-node Grid readiness
+        run: |
+          test "$(curl -fsS http://localhost:8080/health | jq -r .status)" = ok
+          test "$(curl -fsS http://localhost:4444/status | jq -r .value.ready)" = true
+          test "$(curl -fsS http://localhost:4444/status | jq -r '.value.nodes | length')" -ge 3
+      - uses: grafana/setup-k6-action@v1
+      - name: Required k6 profile
+        run: mkdir -p tests/reports && k6 run --summary-export=tests/reports/k6-summary.json tests/k6_load.js
+      - name: Capture stack evidence
+        if: always()
+        run: docker compose ps -a > tests/reports/compose-ps.txt && docker compose logs --no-color > tests/reports/compose.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: day2-autograde-evidence
+          path: tests/reports/
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v
