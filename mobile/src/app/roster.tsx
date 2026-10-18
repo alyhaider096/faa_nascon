@@ -45,8 +45,8 @@ export default function Roster() {
       if (!history.current_squad_id) throw new Error('This player is not in a squad. Refresh the roster and try again.');
       if (!demoMode && action !== 'release' && !destinations.some(d => d.id === destination && d.leagueId === history.league_id)) throw new Error('Choose a destination squad in this league.');
       const loanEnd = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
-      await queueAction({ type: 'roster_transfer', base_version: history.history.length, label: `${action} · ${club.roster.find(p => p.id === player)?.name ?? player}`, payload: { request_id: `req-${Date.now()}`, league_id: history.league_id, player_id: player, type: action, from_squad_id: history.current_squad_id, to_squad_id: action === 'release' ? null : destination, effective_date: new Date().toISOString().slice(0, 10), loan_end_date: action === 'loan' ? loanEnd : null, reason: reason.trim(), requested_by: account?.user_id ?? account?.email } });
-      setFeedbackError(false); setFeedback(online ? 'Action saved. Open the sync queue to review its result.' : 'Saved offline. It will sync after reconnection.');
+      const result = await queueAction({ type: 'roster_transfer', base_version: history.history.length, label: `${action} · ${club.roster.find(p => p.id === player)?.name ?? player}`, payload: { request_id: `req-${Date.now()}`, league_id: history.league_id, player_id: player, type: action, from_squad_id: history.current_squad_id, to_squad_id: action === 'release' ? null : destination, effective_date: new Date().toISOString().slice(0, 10), loan_end_date: action === 'loan' ? loanEnd : null, reason: reason.trim(), requested_by: account?.user_id ?? account?.email } });
+      setFeedbackError(result.status === 'rejected'); setFeedback(result.resolution ?? 'Awaiting server confirmation.');
     } catch (error) { setFeedbackError(true); setFeedback(error instanceof Error ? error.message : 'Could not save this roster action.'); }
   }
   return <Page eyebrow="Club manager tools" title="Manage roster" subtitle="Changes are recorded in the offline action queue until confirmed by the server.">

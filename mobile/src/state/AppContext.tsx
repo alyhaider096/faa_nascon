@@ -1,10 +1,10 @@
 import NetInfo from '@react-native-community/netinfo';
 import * as SecureStore from 'expo-secure-store';
-import * as SQLite from 'expo-sqlite';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { ACCOUNTS, CLUB, DEMO_PASSWORD, FIXTURES, Fixture, PRODUCTS, Product, Role, STANDINGS } from '../data/mock';
 import { ApiError, Bootstrap, ClubProfile, League, Projection, RosterHistory, ServerProduct, Tenant, User, matchFromServer, productFromServer, request } from '../data/api';
+import { deleteActionRecords, initStorage, readActionRecords, readCache, saveActionRecord, writeCache } from '../data/storage';
 
 type Account = (typeof ACCOUNTS)[number] & Partial<User>;
 export type PendingAction = { action_id: string; owner?: string; type: 'score_event' | 'roster_transfer'; queued_at: string; base_version: number; payload: Record<string, unknown>; label: string; status: 'pending' | 'applied' | 'rejected'; resolution?: string };
@@ -19,6 +19,7 @@ type AppState = {
   rosterDestinations: () => Promise<{ id: string; clubName: string; leagueId: string }[]>;
   cart: BasketItem[]; receipt: Receipt | null;
   login: (email: string, password: string) => Promise<string | null>; logout: () => Promise<void>;
+  authorizedRequest: <T>(path: string, body?: unknown, method?: 'GET' | 'POST' | 'DELETE') => Promise<T>;
   setServerUrl: (value: string) => Promise<void>; setDemoMode: (value: boolean) => Promise<void>;
   addToCart: (item: BasketItem) => void; clearCart: () => void; checkout: (token: string, discount: string) => Promise<string | null>;
   addPlayer: (player: { name: string; position: string; number: number }) => Promise<string | null>;
@@ -27,7 +28,6 @@ type AppState = {
 };
 
 const Context = createContext<AppState | null>(null);
-const DB_NAME = 'leagueops.db';
 const DEFAULT_SERVER_URL = 'http://10.0.2.2:8080';
 const EMPTY_CLUB: ClubProfile = { name: 'Club profile', tag: 'No club loaded', founded: 'Not supplied', venue: 'Not supplied', staff: [], roster: [] };
 const utcSeconds = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -45,35 +45,16 @@ const syncExplanation = (code: string | null, status: string) => {
   };
   return explanations[code ?? ''] ?? 'The server rejected this action. Check the current match or roster and try again.';
 };
-let dbPromise: Promise<SQLite.SQLiteDatabase> | undefined;
-const database = () => (dbPromise ??= SQLite.openDatabaseAsync(DB_NAME));
 const web = Platform.OS === 'web';
 const secureGet = (key: string) => web ? Promise.resolve(null) : SecureStore.getItemAsync(key);
 const secureSet = (key: string, value: string) => web ? Promise.resolve() : SecureStore.setItemAsync(key, value);
 const secureDelete = (key: string) => web ? Promise.resolve() : SecureStore.deleteItemAsync(key);
 
-async function initDatabase() {
-  if (web) return;
-  const db = await database();
-  await db.execAsync('CREATE TABLE IF NOT EXISTS cache (key TEXT PRIMARY KEY, data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS actions (id TEXT PRIMARY KEY, data TEXT NOT NULL);');
-}
-async function readCache<T>(key: string, fallback: T): Promise<T> {
-  if (web) { const data = localStorage.getItem(`leagueops:${key}`); return data ? JSON.parse(data) as T : fallback; }
-  const row = await (await database()).getFirstAsync<{ data: string }>('SELECT data FROM cache WHERE key = ?', key);
-  return row ? JSON.parse(row.data) as T : fallback;
-}
-async function writeCache(key: string, data: unknown) {
-  if (web) { localStorage.setItem(`leagueops:${key}`, JSON.stringify(data)); return; }
-  await (await database()).runAsync('INSERT OR REPLACE INTO cache (key, data) VALUES (?, ?)', key, JSON.stringify(data));
-}
 async function readActions() {
-  if (web) return JSON.parse(localStorage.getItem('leagueops:actions') ?? '[]') as PendingAction[];
-  const rows = await (await database()).getAllAsync<{ data: string }>('SELECT data FROM actions ORDER BY id');
-  return rows.map(row => JSON.parse(row.data) as PendingAction).sort((a, b) => a.queued_at.localeCompare(b.queued_at));
+  return (await readActionRecords<PendingAction>()).sort((a, b) => a.queued_at.localeCompare(b.queued_at));
 }
 async function saveAction(action: PendingAction) {
-  if (web) { const actions = await readActions(); localStorage.setItem('leagueops:actions', JSON.stringify([...actions.filter(a => a.action_id !== action.action_id), action])); return; }
-  await (await database()).runAsync('INSERT OR REPLACE INTO actions (id, data) VALUES (?, ?)', action.action_id, JSON.stringify(action));
+  await saveActionRecord(action);
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -105,7 +86,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let active = true;
     (async () => {
-      await initDatabase();
+      await initStorage();
       const [savedSession, savedServer, savedDemo, savedQueue] = await Promise.all([
         secureGet('session_v1'), readCache('server_url', DEFAULT_SERVER_URL), readCache('live_demo_mode', true), readActions(),
       ]);
@@ -168,6 +149,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const api = useCallback(async <T,>(path: string, body?: unknown): Promise<T> => {
     try { return await request<T>(serverUrl, path, tokenRef.current, body); }
     catch (error) { if (error instanceof ApiError && error.status === 401) await logout(); throw error; }
+  }, [logout, serverUrl]);
+  const authorizedRequest = useCallback(async <T,>(path: string, body?: unknown, method: 'GET' | 'POST' | 'DELETE' = body === undefined ? 'GET' : 'POST'): Promise<T> => {
+    try {
+      return await request<T>(serverUrl, path, tokenRef.current, body, method);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) await logout();
+      throw error;
+    }
   }, [logout, serverUrl]);
   const setServerUrl = useCallback(async (value: string) => { const clean = value.trim().replace(/\/$/, ''); if (clean !== serverUrl) await logout(); setServerUrlState(clean); await writeCache('server_url', clean); }, [logout, serverUrl]);
   const setDemoMode = useCallback(async (value: boolean) => { await logout(); setDemoModeState(value); await writeCache('live_demo_mode', value); if (value) { setFixtures(FIXTURES); setStandings(STANDINGS); setClub(CLUB); setProducts(PRODUCTS); } }, [logout]);
@@ -341,10 +330,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } finally { setSyncing(false); }
   }, [account, api, demoMode, online, queue, refreshMatch, serverUrl, syncing]);
   const clearResolved = useCallback(async () => {
-    if (web) { const retained = queue.filter(a => a.status !== 'applied' || a.owner !== `${serverUrl}:${account?.user_id ?? 'demo'}`); localStorage.setItem('leagueops:actions', JSON.stringify(retained)); setQueue(retained); return; }
-    const db = await database();
     const resolved = queue.filter(a => a.status === 'applied' && a.owner === `${serverUrl}:${account?.user_id ?? 'demo'}`);
-    await Promise.all(resolved.map(a => db.runAsync('DELETE FROM actions WHERE id = ?', a.action_id)));
+    await deleteActionRecords(resolved.map(action => action.action_id));
     setQueue(current => current.filter(a => !resolved.some(r => r.action_id === a.action_id)));
   }, [account, queue, serverUrl]);
   useEffect(() => {
@@ -354,7 +341,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [ready, online, demoMode, queue, syncQueue]);
 
   const visibleQueue = queue.filter(a => a.owner === `${serverUrl}:${account?.user_id ?? 'demo'}`);
-  const value = useMemo(() => ({ ready, account, serverUrl, demoMode, online, syncing, fixtures, standings, club, queue: visibleQueue, cart, receipt, login, logout, setServerUrl, setDemoMode, addToCart, clearCart, checkout, addPlayer, queueAction, syncQueue, clearResolved, refreshCache, products, tenant, leagues, selectedLeague, loading, dataError, selectLeague, refreshMatch, watchMatch, rosterHistory, rosterDestinations }), [ready, account, serverUrl, demoMode, online, syncing, fixtures, standings, club, visibleQueue, cart, receipt, login, logout, setServerUrl, setDemoMode, addToCart, clearCart, checkout, addPlayer, queueAction, syncQueue, clearResolved, refreshCache, products, tenant, leagues, selectedLeague, loading, dataError, selectLeague, refreshMatch, watchMatch, rosterHistory, rosterDestinations]);
+  const value = useMemo(() => ({ ready, account, serverUrl, demoMode, online, syncing, fixtures, standings, club, queue: visibleQueue, cart, receipt, login, logout, authorizedRequest, setServerUrl, setDemoMode, addToCart, clearCart, checkout, addPlayer, queueAction, syncQueue, clearResolved, refreshCache, products, tenant, leagues, selectedLeague, loading, dataError, selectLeague, refreshMatch, watchMatch, rosterHistory, rosterDestinations }), [ready, account, serverUrl, demoMode, online, syncing, fixtures, standings, club, visibleQueue, cart, receipt, login, logout, authorizedRequest, setServerUrl, setDemoMode, addToCart, clearCart, checkout, addPlayer, queueAction, syncQueue, clearResolved, refreshCache, products, tenant, leagues, selectedLeague, loading, dataError, selectLeague, refreshMatch, watchMatch, rosterHistory, rosterDestinations]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export function useApp() { const value = useContext(Context); if (!value) throw new Error('AppProvider missing'); return value; }

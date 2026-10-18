@@ -13,7 +13,8 @@ function Shell() {
   const path = usePathname();
   useEffect(() => {
     if (!ready) return;
-    if (!account && path !== '/login' && path !== '/settings') router.replace('/login');
+    const publicPath = path.startsWith('/web/') || path.startsWith('/entity/') || path.startsWith('/stream/') || path.startsWith('/costream/') || path === '/scanner';
+    if (!account && path !== '/login' && path !== '/settings' && !publicPath) router.replace('/login');
     else if (account && (path === '/' || path === '/login')) router.replace('/(tabs)/fixtures');
   }, [account, path, ready]);
   if (!ready) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: C.bg }}><AppMark size={92} /><Text style={{ color: C.text, fontSize: 29, fontWeight: '800', marginBottom: 20 }}>LeagueOps</Text><ActivityIndicator size="large" color={C.accent} /><Text style={{ color: C.muted, marginTop: 16 }}>Opening your league…</Text></View>;
@@ -32,6 +33,12 @@ function Shell() {
       <Stack.Screen name="score" options={{ title: 'Scoring entry' }} />
       <Stack.Screen name="queue" options={{ title: 'Sync queue' }} />
       <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+      <Stack.Screen name="scanner" options={{ title: 'Scan QR' }} />
+      <Stack.Screen name="creator" options={{ title: 'Creator studio' }} />
+      <Stack.Screen name="costream/[id]" options={{ title: 'Co-stream' }} />
+      <Stack.Screen name="entity/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="stream/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="web" options={{ headerShown: false }} />
     </Stack>
   </View>;
 }

@@ -1,0 +1,36 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { GuestExperience } from '../../components/GuestExperience';
+import { ApiError } from '../../data/api';
+import { day2Request } from '../../data/day2';
+import { useApp } from '../../state/AppContext';
+import { C } from '../../theme';
+
+type Participant = { player_id: string; name?: string; muted?: boolean };
+type Session = { session_id: string; status: string; active_host: string | null; layout: 'grid_2' | 'grid_4' | 'spotlight'; active_participants: (string | Participant)[]; participant_count: number; spotlight_player_id?: string | null };
+
+export default function NativeCostream() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { account, serverUrl, authorizedRequest } = useApp();
+  const [session, setSession] = useState<Session | null>(null);
+  const [error, setError] = useState('');
+  const [invitee, setInvitee] = useState('');
+  const canControl = account?.role === 'player' || account?.role === 'league_organizer' || account?.role === 'super_admin';
+  const load = useCallback(async () => {
+    try { setSession(await day2Request<Session>(serverUrl, `/api/v1/public/costream/${encodeURIComponent(id)}`)); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Co-stream state is unavailable.'); }
+  }, [id, serverUrl]);
+  useEffect(() => { void load(); }, [load]);
+  const action = async (actionName: string, payload: Record<string, unknown> = {}) => {
+    setError('');
+    try { const result = await authorizedRequest<Session>(`/api/v1/costream/sessions/${encodeURIComponent(id)}/actions`, { action: actionName, ...payload }); setSession(result); }
+    catch (cause) { setError(cause instanceof ApiError && cause.status === 403 ? 'You are not allowed to control this co-stream.' : cause instanceof Error ? cause.message : 'The co-stream action failed.'); }
+  };
+  const participants = (session?.active_participants ?? []).map(item => typeof item === 'string' ? { player_id: item } : item);
+  if (!account || !canControl) return <GuestExperience id={id} mode="costream" />;
+  return <View style={styles.screen}><View style={styles.panel}><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.layouts}>{(['grid_2', 'grid_4', 'spotlight'] as const).map(layout => <Pressable key={layout} accessibilityRole="button" onPress={() => void action('set_layout', { layout })} style={[styles.choice, session?.layout === layout && styles.choiceActive]}><Text style={[styles.choiceText, session?.layout === layout && styles.choiceTextActive]}>{layout.replace('_', ' ')}</Text></Pressable>)}</ScrollView><View style={styles.sessionActions}><TextInput accessibilityLabel="Player ID to invite" value={invitee} onChangeText={setInvitee} placeholder="Player ID to invite" placeholderTextColor={C.muted} autoCapitalize="none" style={styles.inviteInput} /><Pressable accessibilityRole="button" disabled={!invitee.trim()} onPress={() => { void action('invite', { player_id: invitee.trim() }); setInvitee(''); }} style={styles.command}><Text style={styles.commandText}>Invite</Text></Pressable><Pressable accessibilityRole="button" onPress={() => void action('join')} style={styles.command}><Text style={styles.commandText}>Join</Text></Pressable><Pressable accessibilityRole="button" onPress={() => void action('leave')} style={styles.commandSecondary}><Text style={styles.commandSecondaryText}>Leave</Text></Pressable><Pressable accessibilityRole="button" onPress={() => void action('stop')} style={styles.commandDanger}><Text style={styles.commandText}>Stop</Text></Pressable></View>{error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.people}>{participants.map((participant, index) => <View key={participant.player_id} style={styles.person}><View style={styles.personTop}><Ionicons name="videocam" color={C.accent} size={19} /><Text style={styles.personName}>{participant.name ?? participant.player_id}</Text></View><Text style={styles.meta}>{session?.active_host === participant.player_id ? 'Active host' : `Participant ${index + 1}`}{participant.muted ? ' · Muted' : ''}</Text><View style={styles.actions}><Pressable accessibilityRole="button" accessibilityLabel={`Mute ${participant.name ?? participant.player_id}`} onPress={() => void action('mute', { player_id: participant.player_id })} style={styles.action}><Ionicons name="mic-off" color={C.text} size={17} /></Pressable><Pressable accessibilityRole="button" accessibilityLabel={`Spotlight ${participant.name ?? participant.player_id}`} onPress={() => void action('spotlight', { player_id: participant.player_id })} style={styles.action}><Ionicons name="star" color={C.gold} size={17} /></Pressable><Pressable accessibilityRole="button" accessibilityLabel={`Remove ${participant.name ?? participant.player_id}`} onPress={() => void action('kick', { player_id: participant.player_id })} style={styles.action}><Ionicons name="close" color={C.danger} size={18} /></Pressable></View></View>)}</ScrollView></View><View style={{ flex: 1 }}><GuestExperience id={id} mode="costream" /></View></View>;
+}
+const styles = StyleSheet.create({ screen: { flex: 1, backgroundColor: C.bg }, panel: { backgroundColor: '#11171B', paddingVertical: 10 }, layouts: { paddingHorizontal: 14, gap: 8 }, choice: { minHeight: 44, borderRadius: 22, backgroundColor: C.surface2, paddingHorizontal: 16, justifyContent: 'center' }, choiceActive: { backgroundColor: C.accent }, choiceText: { color: C.text, fontWeight: '800', textTransform: 'capitalize' }, choiceTextActive: { color: C.bg }, sessionActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 14, paddingTop: 10 }, inviteInput: { minHeight: 48, minWidth: 180, flexGrow: 1, borderRadius: 24, backgroundColor: C.surface, color: C.text, paddingHorizontal: 16 }, command: { minHeight: 48, borderRadius: 24, backgroundColor: C.accent, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' }, commandSecondary: { minHeight: 48, borderRadius: 24, backgroundColor: C.surface2, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' }, commandDanger: { minHeight: 48, borderRadius: 24, backgroundColor: C.danger, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' }, commandText: { color: C.bg, fontWeight: '900' }, commandSecondaryText: { color: C.text, fontWeight: '900' }, people: { paddingHorizontal: 14, paddingTop: 10, gap: 9 }, person: { width: 210, backgroundColor: C.surface, borderRadius: 16, padding: 12 }, personTop: { flexDirection: 'row', gap: 8, alignItems: 'center' }, personName: { color: C.text, fontWeight: '800', flex: 1 }, meta: { color: C.muted, fontSize: 11, marginTop: 5 }, actions: { flexDirection: 'row', gap: 6, marginTop: 8 }, action: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2 }, error: { color: C.danger, paddingHorizontal: 16, marginTop: 8 } });
+
