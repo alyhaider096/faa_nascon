@@ -46,6 +46,10 @@ services:
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
       MEDIA_PUBLIC_HOST: ${MEDIA_PUBLIC_HOST:-localhost}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:19006,http://127.0.0.1:19006}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-nascon}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-nascon-minio-dev}
+      MINIO_VOD_BUCKET: ${MINIO_VOD_BUCKET:-nascon-vod}
     ports:
       - "8080:8080"
     depends_on:
@@ -78,11 +82,22 @@ services:
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
       MEDIA_PUBLIC_HOST: ${MEDIA_PUBLIC_HOST:-localhost}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:19006,http://127.0.0.1:19006}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-nascon}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-nascon-minio-dev}
+      MINIO_VOD_BUCKET: ${MINIO_VOD_BUCKET:-nascon-vod}
+      RECORDINGS_DIR: /recordings
+    volumes:
+      - mediarecordings:/recordings:ro
     depends_on:
       api:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio:
+        condition: service_healthy
+      media:
+        condition: service_started
     restart: unless-stopped
 
   minio:

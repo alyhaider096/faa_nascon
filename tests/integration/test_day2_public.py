@@ -115,3 +115,43 @@ def test_metrics_track_websocket_and_privacy_revokes_member_token(client, server
     rejected = client.get("/api/v1/me", headers=headers)
     assert rejected.status_code == 401
     assert rejected.json()["error"]["code"] == "UNAUTHENTICATED"
+
+
+def test_completed_recording_is_indexed_once_and_selected_for_vod(client, reset, tmp_path):
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from app.core.db import tx
+    from app.worker import index_recordings_once
+
+    source = tmp_path / "live" / "sk_live_test" / f"{uuid4().hex}.mp4"
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b"complete-mp4-recording")
+
+    class Store:
+        uploaded: list[tuple] = []
+
+        def bucket_exists(self, _bucket): return True
+        def make_bucket(self, _bucket): raise AssertionError("existing bucket must not be recreated")
+        def fput_object(self, *args, **kwargs):
+            self.uploaded.append((args, kwargs))
+            return SimpleNamespace(etag="test-etag")
+
+    store = Store()
+    with tx() as conn:
+        assert index_recordings_once(conn, store, "test-vod", str(tmp_path), set()) == 1
+        assert index_recordings_once(conn, store, "test-vod", str(tmp_path), set()) == 0
+        row = conn.execute(
+            "SELECT vod_id FROM day2_vod_assets WHERE source_path=%s", (source.relative_to(tmp_path).as_posix(),)
+        ).fetchone()
+    assert len(store.uploaded) == 1
+
+    ended = client.post("/audit/v1/events", json={
+        "event_id": "vod-match-end", "match_id": "match-m1", "type": "match_end", "payload": {},
+    })
+    assert ended.status_code == 201
+    match = client.get("/api/v1/public/matches/match-m1").json()
+    assert match["playback_url"] == f"/api/v1/vod/{row['vod_id']}"
+
+    with tx() as conn:
+        conn.execute("DELETE FROM day2_vod_assets WHERE vod_id=%s", (row["vod_id"],))

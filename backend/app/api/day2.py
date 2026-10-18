@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import threading
 import time
 import urllib.error
@@ -10,10 +11,12 @@ import urllib.request
 from pathlib import Path
 
 from fastapi import APIRouter, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response,
+                               StreamingResponse)
 from starlette.concurrency import run_in_threadpool
 
-from ..core import realtime
+from ..core import object_store, realtime
+from ..core.config import get_settings
 from ..core.errors import DomainError
 from ..core.security import authenticate, forbidden, reject_anonymous_guest
 from ..core.validation import read_json_object
@@ -153,6 +156,49 @@ async def public_match(match_id: str):
 @router.get("/api/v1/public/costream/{session_id}")
 async def public_costream(session_id: str):
     return await run_tx(day2.public_costream, session_id)
+
+
+def _object_chunks(response, chunk_size: int = 256 * 1024):
+    try:
+        while data := response.read(chunk_size):
+            yield data
+    finally:
+        response.close()
+        response.release_conn()
+
+
+@router.get("/api/v1/vod/{vod_id}")
+async def vod_playback(vod_id: str, request: Request):
+    asset = await run_tx(day2.vod_asset, vod_id)
+    size = int(asset["size_bytes"])
+    start, end = 0, size - 1
+    range_header = request.headers.get("range")
+    status = 200
+    if range_header:
+        match = re.fullmatch(r"bytes=(\d*)-(\d*)", range_header.strip())
+        if not match:
+            return Response(status_code=416, headers={"Content-Range": f"bytes */{size}"})
+        if match.group(1):
+            start = int(match.group(1))
+            end = min(int(match.group(2)) if match.group(2) else size - 1, size - 1)
+        elif match.group(2):
+            suffix = min(int(match.group(2)), size)
+            start = size - suffix
+        if start > end or start >= size:
+            return Response(status_code=416, headers={"Content-Range": f"bytes */{size}"})
+        status = 206
+    length = end - start + 1
+    settings = get_settings()
+    store = object_store.client(settings)
+    response = await run_in_threadpool(
+        store.get_object, settings.minio_bucket, asset["object_key"], start, length,
+    )
+    headers = {"Accept-Ranges": "bytes", "Content-Length": str(length)}
+    if status == 206:
+        headers["Content-Range"] = f"bytes {start}-{end}/{size}"
+    return StreamingResponse(
+        _object_chunks(response), status_code=status, media_type="video/mp4", headers=headers
+    )
 
 
 @router.get("/api/v1/players/{player_id}")

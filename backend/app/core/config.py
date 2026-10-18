@@ -16,6 +16,11 @@ class Settings:
     day2_salt: str = field(repr=False)
     database_url: str
     redis_url: str
+    minio_endpoint: str = "minio:9000"
+    minio_access_key: str = "nascon"
+    minio_secret_key: str = field(default="nascon-minio-dev", repr=False)
+    minio_bucket: str = "nascon-vod"
+    recordings_dir: str = "/recordings"
     pool_max: int = 40
     body_limit_bytes: int = 1024 * 1024
     rate_limit_requests: int = 100
@@ -58,6 +63,11 @@ def load_settings(env: dict | None = None) -> Settings:
         day2_salt=day2_salt,
         database_url=env.get("DATABASE_URL", "postgresql://nascon:nascon@db:5432/nascon"),
         redis_url=env.get("REDIS_URL", "redis://redis:6379/0"),
+        minio_endpoint=env.get("MINIO_ENDPOINT", "minio:9000"),
+        minio_access_key=env.get("MINIO_ROOT_USER", "nascon"),
+        minio_secret_key=env.get("MINIO_ROOT_PASSWORD", "nascon-minio-dev"),
+        minio_bucket=env.get("MINIO_VOD_BUCKET", "nascon-vod"),
+        recordings_dir=env.get("RECORDINGS_DIR", "/recordings"),
         pool_max=int(env.get("DB_POOL_MAX", "40")),
         check_runtime_dependencies=env.get("CHECK_RUNTIME_DEPENDENCIES", "0") == "1",
         public_base_url=env.get("PUBLIC_BASE_URL", "http://localhost:8080").rstrip("/"),

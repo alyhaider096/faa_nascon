@@ -472,7 +472,11 @@ def public_match(conn, match_id: str) -> dict:
         "SELECT stream_key FROM day2_stream_keys WHERE status='active' ORDER BY created_at DESC LIMIT 1"
     ).fetchone()
     media_host = get_settings().media_public_host
-    playback = (f"http://{media_host}:8888/live/{stream['stream_key']}/index.m3u8" if stream else None)
+    vod = conn.execute(
+        "SELECT vod_id FROM day2_vod_assets WHERE match_id=%s ORDER BY created_at DESC LIMIT 1", (match_id,)
+    ).fetchone()
+    playback = (f"/api/v1/vod/{vod['vod_id']}" if state["status"] == "completed" and vod else
+                f"http://{media_host}:8888/live/{stream['stream_key']}/index.m3u8" if stream else None)
     product = _product(conn, "prod-jersey-001")
     return {
         "match_id": match_id, "status": state["status"], "version": state["version"],
@@ -488,6 +492,15 @@ def public_match(conn, match_id: str) -> dict:
                       "created_at": event["created_at"].isoformat()} for event in events],
         "pinned_product": product,
     }
+
+
+def vod_asset(conn, vod_id: str) -> dict:
+    row = conn.execute(
+        "SELECT vod_id,object_key,size_bytes FROM day2_vod_assets WHERE vod_id=%s", (vod_id,)
+    ).fetchone()
+    if row is None:
+        raise DomainError(404, "STREAM_NOT_FOUND", "VOD recording does not exist.", {"vod_id": vod_id})
+    return row
 
 
 def public_costream(conn, session_id: str) -> dict:
