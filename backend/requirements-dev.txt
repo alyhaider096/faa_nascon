@@ -7,3 +7,5 @@ pypdf==5.9.0
 pytest-xdist==3.8.0
 selenium==4.38.0
 Appium-Python-Client==5.2.4
+PyMuPDF==1.28.2
+zxing-cpp==3.1.1
