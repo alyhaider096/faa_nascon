@@ -1,5 +1,10 @@
 # Requirement Traceability
 
+## Required artifact audit - 13:59 PKT
+
+COVERAGE_DAY2.json now contains measured functional-region percentages from the final raw report. Exact per-function denominators and scope are in tests/reports/day2-coverage-mapping.json. This mapping excludes module initialization and dependencies outside the three selected source files; it is not proof of whole-stack coverage. Values below 85% are failures, not rounded into passes.
+
+
 ## Final regression - 18 October 2026, 13:58 PKT
 
 Final source `758d46ce860d4531d843f78160c6a94d8fb0ec8b` (same source as the

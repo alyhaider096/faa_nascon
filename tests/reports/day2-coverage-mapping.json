@@ -1,0 +1,461 @@
+{
+  "source_sha": "758d46ce860d4531d843f78160c6a94d8fb0ec8b",
+  "raw_report": "tests/reports/post-integration-coverage.json",
+  "scope": "Measured executable lines within top-level functions in Day 2 API/domain and worker; shared worker relay/main counted in moderation_dlq and observability. Function regions exclude module initialization and external dependencies; this is not whole-stack coverage.",
+  "groups": {
+    "streaming": [
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "_kick_media_publishers",
+        "covered": 1,
+        "missing": 14
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "stream_key",
+        "covered": 2,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "_stream_key_response",
+        "covered": 5,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "production_stream_key",
+        "covered": 7,
+        "missing": 1
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "_object_chunks",
+        "covered": 6,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "vod_playback",
+        "covered": 27,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "media_auth",
+        "covered": 8,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "_player_exists",
+        "covered": 2,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "_player_not_found",
+        "covered": 2,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "_stream_response",
+        "covered": 5,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "stream_key",
+        "covered": 25,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "media_authorized",
+        "covered": 2,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "vod_asset",
+        "covered": 5,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/worker.py",
+        "function": "active_media_paths",
+        "covered": 1,
+        "missing": 6
+      },
+      {
+        "file": "backend/app/worker.py",
+        "function": "index_recordings_once",
+        "covered": 24,
+        "missing": 4
+      }
+    ],
+    "costream": [
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "costream",
+        "covered": 3,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "public_costream",
+        "covered": 2,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "production_costream_action",
+        "covered": 7,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "costream",
+        "covered": 32,
+        "missing": 3
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "public_costream",
+        "covered": 5,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "_costream_participant_ids",
+        "covered": 2,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "_resign_costream",
+        "covered": 3,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "_remove_costream_participant",
+        "covered": 8,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "costream_member",
+        "covered": 3,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "costream_disconnect",
+        "covered": 6,
+        "missing": 1
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "costream_action",
+        "covered": 42,
+        "missing": 24
+      }
+    ],
+    "qr_guest": [
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "_bearer",
+        "covered": 3,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "qr_metadata",
+        "covered": 4,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "qr_export",
+        "covered": 3,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "qr_redirect",
+        "covered": 2,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "cart_merge",
+        "covered": 9,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "public_match",
+        "covered": 2,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "player_profile",
+        "covered": 2,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "public_club_profile",
+        "covered": 2,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "follow",
+        "covered": 3,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "guest_session",
+        "covered": 2,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "guest_cart",
+        "covered": 5,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "guest_web_spa",
+        "covered": 4,
+        "missing": 1
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "_registered_exists",
+        "covered": 2,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "_entity_status",
+        "covered": 4,
+        "missing": 4
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "_target",
+        "covered": 5,
+        "missing": 4
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "qr_metadata",
+        "covered": 15,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "qr_by_short_code",
+        "covered": 4,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "qr_export",
+        "covered": 17,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "_active_cart",
+        "covered": 4,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "cart_merge",
+        "covered": 42,
+        "missing": 2
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "apply_match_event",
+        "covered": 3,
+        "missing": 2
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "_valid_guest",
+        "covered": 4,
+        "missing": 1
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "create_guest_session",
+        "covered": 4,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "stage_guest_cart",
+        "covered": 18,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "_product",
+        "covered": 5,
+        "missing": 1
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "public_match",
+        "covered": 12,
+        "missing": 1
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "public_profile",
+        "covered": 10,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "update_follow",
+        "covered": 13,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "append_public_match_event",
+        "covered": 29,
+        "missing": 4
+      }
+    ],
+    "moderation_dlq": [
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "moderation",
+        "covered": 2,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "chat_messages",
+        "covered": 6,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "chat",
+        "covered": 9,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "_normalized_with_map",
+        "covered": 8,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "_mask_profanity",
+        "covered": 10,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "moderation",
+        "covered": 33,
+        "missing": 1
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "chat_history",
+        "covered": 5,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "post_chat",
+        "covered": 12,
+        "missing": 1
+      },
+      {
+        "file": "backend/app/worker.py",
+        "function": "_stop",
+        "covered": 1,
+        "missing": 1
+      },
+      {
+        "file": "backend/app/worker.py",
+        "function": "relay_once",
+        "covered": 7,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/worker.py",
+        "function": "main",
+        "covered": 1,
+        "missing": 32
+      }
+    ],
+    "observability": [
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "_media_metrics",
+        "covered": 15,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "metrics",
+        "covered": 4,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "privacy",
+        "covered": 2,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "metrics",
+        "covered": 4,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/domain/day2.py",
+        "function": "erase_user",
+        "covered": 16,
+        "missing": 7
+      },
+      {
+        "file": "backend/app/worker.py",
+        "function": "_stop",
+        "covered": 1,
+        "missing": 1
+      },
+      {
+        "file": "backend/app/worker.py",
+        "function": "relay_once",
+        "covered": 7,
+        "missing": 0
+      },
+      {
+        "file": "backend/app/worker.py",
+        "function": "main",
+        "covered": 1,
+        "missing": 32
+      }
+    ]
+  }
+}
