@@ -167,7 +167,8 @@ export async function loadPublicMatch(base: string, matchId: string) {
 
 export async function loadProfile(base: string, type: 'player' | 'club', id: string): Promise<PublicProfile> {
   const plural = type === 'player' ? 'players' : 'clubs';
-  const raw = await day2Request<any>(base, `/api/v1/${plural}/${encodeURIComponent(id)}`);
+  const path = type === 'club' ? `/api/v1/public/${plural}/${encodeURIComponent(id)}` : `/api/v1/${plural}/${encodeURIComponent(id)}`;
+  const raw = await day2Request<any>(base, path);
   const source = raw?.[type] ?? raw;
   const matches = Array.isArray(source?.career_matches) ? source.career_matches : Array.isArray(source?.matches) ? source.matches : [];
   const fixtures = Array.isArray(source?.upcoming_fixtures) ? source.upcoming_fixtures : Array.isArray(source?.fixtures) ? source.fixtures : [];
@@ -219,4 +220,3 @@ export function realtimeUrls(base: string, matchId: string, guestToken?: string 
   const encoded = encodeURIComponent(matchId);
   return [`${root}/ws/matches/${encoded}${query}`, `${root}/ws/v1/matches/${encoded}${query}`];
 }
-

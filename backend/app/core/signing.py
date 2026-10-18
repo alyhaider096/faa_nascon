@@ -26,6 +26,13 @@ def sign_record(record_id: str, payload: Any, *, salt: str | None = None) -> str
     return hmac.new(key, message, hashlib.sha256).hexdigest()
 
 
+def sign_day2(entity_id: str, payload: Any, *, salt: str | None = None) -> str:
+    """Sign a Phase II response with DAY2_SALT and the same canonical pipe-delimited recipe."""
+    key = (salt if salt is not None else get_settings().day2_salt).encode("utf-8")
+    message = (entity_id + "|" + canonical(payload)).encode("utf-8")
+    return hmac.new(key, message, hashlib.sha256).hexdigest()
+
+
 def request_hash(body: Any) -> str:
     """Stable identity of a request body, used for idempotency comparisons (not a signature)."""
     return hashlib.sha256(canonical(body).encode("utf-8")).hexdigest()

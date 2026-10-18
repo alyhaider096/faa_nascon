@@ -28,6 +28,9 @@ class Hub:
         if not self.clients[match_id]:
             self.clients.pop(match_id, None)
 
+    def connection_count(self) -> int:
+        return sum(len(clients) for clients in self.clients.values())
+
     async def publish(self, match_id: str, message: dict[str, Any]) -> None:
         text = json.dumps(message)
         for ws in list(self.clients.get(match_id, ())):

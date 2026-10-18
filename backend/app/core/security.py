@@ -50,6 +50,7 @@ def issue_token(user: dict, *, ttl: int | None = None) -> str:
         "league_id": user.get("league_id"),
         "club_id": user.get("club_id"),
         "player_id": user.get("player_id"),
+        "ver": int(user.get("token_version", 0)),
         "iat": now,
         "exp": now + (ttl if ttl is not None else get_settings().token_ttl_seconds),
     }
@@ -65,6 +66,7 @@ class Claims:
     league_id: str | None
     club_id: str | None
     player_id: str | None
+    token_version: int
 
 
 def decode_token(token: str) -> Claims:
@@ -82,7 +84,23 @@ def decode_token(token: str) -> Claims:
         user_id=str(data["sub"]), email=str(data.get("email", "")), role=data["role"],
         tenant_id=data.get("tenant_id"), league_id=data.get("league_id"),
         club_id=data.get("club_id"), player_id=data.get("player_id"),
+        token_version=int(data.get("ver", 0)),
     )
+
+
+def validate_active_claims(claims: Claims) -> Claims:
+    """Reject a validly signed JWT after its account has been erased/revoked."""
+    from .db import tx
+
+    with tx() as conn:
+        row = conn.execute("SELECT token_version FROM users WHERE user_id=%s", (claims.user_id,)).fetchone()
+    if row is None or row["token_version"] != claims.token_version:
+        raise _unauth("Token has been revoked.")
+    return claims
+
+
+def authenticate_token(token: str) -> Claims:
+    return validate_active_claims(decode_token(token))
 
 
 def authenticate(request: Request) -> Claims:
@@ -92,7 +110,19 @@ def authenticate(request: Request) -> Claims:
     parts = header.split(" ")
     if len(parts) != 2 or parts[0].lower() != "bearer" or not parts[1]:
         raise _unauth("Malformed Authorization header.")
-    return decode_token(parts[1])
+    return authenticate_token(parts[1])
+
+
+def reject_anonymous_guest(request: Request) -> None:
+    """Enforce the Phase II read-only guest boundary before a mutation parses its body."""
+    header = request.headers.get("authorization", "")
+    token = header[7:] if header.lower().startswith("bearer ") else ""
+    if token.startswith("guest_"):
+        raise DomainError(
+            403, "GUEST_WRITE_FORBIDDEN",
+            "Anonymous guest tokens cannot perform write mutations.",
+            {"guest_token": token},
+        )
 
 
 # Passwords ---------------------------------------------------------------------------------

@@ -1,0 +1,202 @@
+"""Production-facing Day 2 contracts consumed by the merged mobile/web client."""
+from __future__ import annotations
+
+import json
+import time
+
+
+def _login(client, email="viewer@nascon.test"):
+    response = client.post("/api/v1/auth/login", json={"email": email, "password": "Nascon@26"})
+    assert response.status_code == 200, response.text
+    return response.json()["token"]
+
+
+def test_public_match_guest_cart_and_dynamic_qr(client, reset):
+    match = client.get("/api/v1/public/matches/match-m1")
+    assert match.status_code == 200
+    assert match.json()["home"]["score"] == 1
+    assert match.json()["pinned_product"]["product_id"] == "prod-jersey-001"
+
+    session = client.post("/api/v1/guest/session", json={})
+    assert session.status_code == 201
+    guest = session.json()["guest_token"]
+    staged = client.post(
+        "/api/v1/guest/cart", headers={"Authorization": f"Bearer {guest}"},
+        json={"items": [{"variant_id": "var-jersey-001-L", "quantity": 1}]},
+    )
+    assert staged.status_code == 200 and staged.json()["total_items"] == 1
+
+    before = client.get("/audit/v1/qr/match-m1?inspect=true").json()
+    ended = client.post("/audit/v1/events", json={
+        "event_id": "day2-public-end", "match_id": "match-m1", "type": "match_end", "payload": {},
+    })
+    assert ended.status_code == 201
+    assert client.post("/audit/v1/events", json={
+        "event_id": "day2-public-end", "match_id": "match-m1", "type": "match_end", "payload": {},
+    }).status_code == 200
+    after = client.get("/audit/v1/qr/match-m1?inspect=true").json()
+    assert before["short_url"] == after["short_url"]
+    assert after["target_route"] == "/web/matches/match-m1/vod"
+    assert before["signature"] != after["signature"]
+
+
+def test_member_chat_follow_and_identity_bound_merge(client, reset):
+    guest = client.post("/api/v1/guest/session", json={}).json()["guest_token"]
+    blocked = client.post(
+        "/api/v1/chat", headers={"Authorization": f"Bearer {guest}"},
+        json={"chat_room_id": "chat-match-m1", "message_id": "guest-message", "text": "hello"},
+    )
+    assert blocked.status_code == 403
+    assert blocked.json()["error"]["code"] == "GUEST_WRITE_FORBIDDEN"
+
+    token = _login(client)
+    headers = {"Authorization": f"Bearer {token}"}
+    posted = client.post("/api/v1/chat", headers=headers, json={
+        "chat_room_id": "chat-match-m1", "message_id": "member-message", "text": "b@d.w0rd",
+    })
+    assert posted.status_code == 201 and posted.json()["message"]["text"] == "***"
+    history = client.get("/api/v1/chat/chat-match-m1", headers=headers)
+    assert history.status_code == 200 and history.json()["messages"][0]["message_id"] == "member-message"
+
+    followed = client.post("/api/v1/follows", headers=headers, json={
+        "entity_type": "player", "entity_id": "player-alpha-1", "action": "follow",
+    })
+    assert followed.status_code == 200 and followed.json() == {"following": True, "followers": 1}
+
+    merged = client.post("/audit/v1/guest/cart-merge", headers=headers, json={
+        "guest_token": guest, "registered_user_id": "user-viewer",
+        "guest_cart": [{"variant_id": "var-jersey-001-L", "quantity": 1}], "test_write_block": True,
+    })
+    assert merged.status_code == 200 and merged.json()["active_cart"]["total_items"] == 1
+    wrong_identity = client.post("/audit/v1/guest/cart-merge", headers=headers, json={
+        "guest_token": "guest_anon_tok_7721", "registered_user_id": "player-alpha-1",
+        "guest_cart": [{"variant_id": "var-jersey-001-L", "quantity": 1}], "test_write_block": True,
+    })
+    assert wrong_identity.status_code == 403
+
+
+def test_guest_websocket_receives_score_without_member_jwt(client, server, reset):
+    from websockets.sync.client import connect
+
+    guest = client.post("/api/v1/guest/session", json={}).json()["guest_token"]
+    ws_base = server.replace("http://", "ws://")
+    with connect(f"{ws_base}/ws/matches/match-m1?token={guest}") as socket:
+        assert json.loads(socket.recv(timeout=5)) == {"type": "hello", "match_id": "match-m1"}
+        response = client.post("/audit/v1/events", json={
+            "event_id": "day2-public-score", "match_id": "match-m1", "type": "score",
+            "payload": {"team_id": "club-alpha-2", "event_type": "goal"},
+        })
+        assert response.status_code == 201
+        update = json.loads(socket.recv(timeout=5))
+        assert update["type"] == "score" and update["home_score"] == 1 and update["away_score"] == 1
+
+
+def test_metrics_track_websocket_and_privacy_revokes_member_token(client, server, reset):
+    from websockets.sync.client import connect
+
+    token = _login(client)
+    headers = {"Authorization": f"Bearer {token}"}
+    assert client.get("/api/v1/me", headers=headers).status_code == 200
+
+    ws_base = server.replace("http://", "ws://")
+    with connect(f"{ws_base}/ws/v1/matches/match-m1?token={token}") as socket:
+        assert json.loads(socket.recv(timeout=5))["type"] == "hello"
+        metrics = client.get("/metrics")
+        assert metrics.status_code == 200
+        assert "nascon_active_ws_connections 1\n" in metrics.text
+        assert "nascon_active_streams_total " in metrics.text
+        assert "nascon_stream_bitrate_kbps " in metrics.text
+
+    erased = client.delete("/audit/v1/privacy/user/user-viewer")
+    assert erased.status_code == 200
+    assert erased.json() == {
+        "user_id": "user-viewer", "status": "anonymized",
+        "pii_retained": False, "tokens_wiped": True,
+    }
+    rejected = client.get("/api/v1/me", headers=headers)
+    assert rejected.status_code == 401
+    assert rejected.json()["error"]["code"] == "UNAUTHENTICATED"
+
+
+def test_completed_recording_is_indexed_once_and_selected_for_vod(client, reset, tmp_path):
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from app.core.db import tx
+    from app.worker import index_recordings_once
+
+    source = tmp_path / "live" / "sk_live_test" / f"{uuid4().hex}.mp4"
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b"complete-mp4-recording")
+
+    class Store:
+        uploaded: list[tuple] = []
+
+        def bucket_exists(self, _bucket): return True
+        def make_bucket(self, _bucket): raise AssertionError("existing bucket must not be recreated")
+        def fput_object(self, *args, **kwargs):
+            self.uploaded.append((args, kwargs))
+            return SimpleNamespace(etag="test-etag")
+
+    store = Store()
+    with tx() as conn:
+        assert index_recordings_once(conn, store, "test-vod", str(tmp_path), set()) == 1
+        assert index_recordings_once(conn, store, "test-vod", str(tmp_path), set()) == 0
+        row = conn.execute(
+            "SELECT vod_id FROM day2_vod_assets WHERE source_path=%s", (source.relative_to(tmp_path).as_posix(),)
+        ).fetchone()
+    assert len(store.uploaded) == 1
+
+    ended = client.post("/audit/v1/events", json={
+        "event_id": "vod-match-end", "match_id": "match-m1", "type": "match_end", "payload": {},
+    })
+    assert ended.status_code == 201
+    match = client.get("/api/v1/public/matches/match-m1").json()
+    assert match["playback_url"] == f"/api/v1/vod/{row['vod_id']}"
+
+    with tx() as conn:
+        conn.execute("DELETE FROM day2_vod_assets WHERE vod_id=%s", (row["vod_id"],))
+
+
+def test_production_costream_controls_and_socket_disconnect_handoff(client, server, reset):
+    from websockets.sync.client import connect
+
+    created = client.post("/audit/v1/costream/session", json={
+        "session_id": "cs-live-handoff", "host_player_id": "player-alpha-1",
+        "participants": ["player-alpha-1", "player-alpha-2"], "layout": "grid_2",
+    })
+    assert created.status_code == 201
+    token = _login(client, "player@nascon.test")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    invited = client.post(
+        "/api/v1/costream/sessions/cs-live-handoff/actions", headers=headers,
+        json={"action": "invite", "player_id": "player-beta-1"},
+    )
+    assert invited.status_code == 200
+    assert invited.json()["pending_invitations"] == ["player-beta-1"]
+    assert len(invited.json()["invitation"]["signature"]) == 64
+
+    muted = client.post(
+        "/api/v1/costream/sessions/cs-live-handoff/actions", headers=headers,
+        json={"action": "mute", "player_id": "player-alpha-2"},
+    )
+    assert muted.status_code == 200
+    assert muted.json()["muted_participants"] == ["player-alpha-2"]
+
+    ws_base = server.replace("http://", "ws://")
+    with connect(f"{ws_base}/ws/costream/cs-live-handoff?token={token}") as socket:
+        hello = json.loads(socket.recv(timeout=5))
+        assert hello["player_id"] == "player-alpha-1"
+
+    deadline = time.monotonic() + 2
+    state = None
+    while time.monotonic() < deadline:
+        state = client.get("/api/v1/public/costream/cs-live-handoff").json()
+        if state["active_host"] == "player-alpha-2":
+            break
+        time.sleep(0.05)
+    assert state["active_host"] == "player-alpha-2"
+    assert state["handoff_occurred"] is True
+    assert state["participant_count"] == 1
+    assert state["chat_room_id"] == "chat-cs-live-handoff"

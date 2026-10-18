@@ -11,7 +11,7 @@ No signing salt belongs in the frontend. Member JWTs are sent with `Authorizatio
 | Match experience | `GET /api/v1/public/matches/{match_id}` **team contract** | Guest allowed | Match identity/status, teams and scores, `playback_url`, timeline, `chat_room_id`, pinned product and variants. The client temporarily accepts the existing `GET /api/v1/matches/{id}` shape as a compatibility fallback. |
 | Co-stream experience | `GET /api/v1/public/costream/{session_id}` **team contract** | Guest allowed | Session status, match/teams when available, `composite_playback_url`, room ID, layout, host and participants. |
 | Player profile | `GET /api/v1/players/{player_id}` **team contract** | Guest allowed | Identity, affiliation, career matches, upcoming fixtures, followers and VOD archive. |
-| Club profile | `GET /api/v1/clubs/{club_id}` | Guest allowed | Club identity, roster/affiliation, fixtures and VOD archive. |
+| Club profile | `GET /api/v1/public/clubs/{club_id}` | Guest allowed | Club identity, roster/affiliation, fixtures and VOD archive. The Day 1 `/api/v1/clubs/{club_id}` route remains authenticated and tenant-scoped. |
 | Follow profile | `POST /api/v1/follows` **team contract** | Member body `{entity_type,entity_id,action}`; response `{following,followers}` is authoritative. |
 | QR metadata | `GET /audit/v1/qr/{entity_id}?inspect=true` | Guest allowed | Exact `target_route`; frontend does not infer state. |
 | Stable QR redirect | `GET /q/{short_code}` | Guest allowed | HTTP 302 to the current `/web/...` route. |
@@ -55,4 +55,3 @@ Public routes are `/web/matches/{id}/{preview|live|vod|notice}`, `/web/costream/
 Both match-live and co-stream experiences expose exactly one interactive/container instance of:
 
 `guest-video-player`, `live-score-banner`, `pinned-merch-card`, `add-to-guest-cart-btn`, `guest-cart-count`, `chat-message-list`, `chat-input-field`, `chat-send-btn`, `progressive-auth-modal`.
-

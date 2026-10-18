@@ -3,6 +3,8 @@ probes and offline sync. Scoring/standings/fixtures routes live in the domain ow
 (`app.api.domain_audit`, mounted automatically when present)."""
 from __future__ import annotations
 
+import socket
+
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
@@ -12,7 +14,8 @@ from ..core.config import get_settings
 from ..core.db import tx
 from ..core.errors import DomainError
 from ..core.security import (authenticate, can_edit_player, can_manage_club, can_manage_league,
-                             can_read_club, forbidden, issue_token, role_may_ever)
+                             can_read_club, forbidden, issue_token, reject_anonymous_guest,
+                             role_may_ever)
 from ..core.validation import read_json_object
 from ..domain import offline, roster, seed as seed_mod, store
 from .common import run_tx
@@ -27,6 +30,17 @@ def health():
             ok = seed_mod.is_seeded(conn)
     except Exception:  # noqa: BLE001 - any DB trouble means "not ready"
         ok = False
+    settings = get_settings()
+    if ok and settings.check_runtime_dependencies:
+        try:
+            queue.client(settings.redis_url).ping()
+            # The management API is intentionally protected by MediaMTX's HTTP
+            # auth hook. A successful TCP handshake verifies process readiness
+            # without weakening that policy or manufacturing credentials.
+            with socket.create_connection(("media", 1935), timeout=1):
+                pass
+        except Exception:  # noqa: BLE001 - dependency failure means not ready
+            ok = False
     if not ok:
         return JSONResponse(status_code=503, content={"status": "starting"})
     return {"status": "ok"}
@@ -65,6 +79,7 @@ async def roster_history(player_id: str, as_of: str | None = None):
 # ---------------------------------------------------------------------------- store ---------
 @router.post("/audit/v1/checkout")
 async def checkout(request: Request):
+    reject_anonymous_guest(request)
     body = await read_json_object(request)
     status, out = await run_tx(store.checkout, body)
     return JSONResponse(status_code=status, content=out)

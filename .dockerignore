@@ -1,0 +1,15 @@
+.git
+.github
+.env
+.env.*
+**/__pycache__
+**/.pytest_cache
+**/.expo
+**/node_modules
+mobile/android
+mobile/ios
+mobile/dist
+mobile/release
+tests
+tmp
+*.pyc
