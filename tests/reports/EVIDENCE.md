@@ -39,6 +39,19 @@
 - Mobile: `npm run typecheck` and `CI=1 EXPO_NO_TELEMETRY=1 npm run lint` passed after final changes. Initial lint was blocked by Expo telemetry writing outside workspace; disabling telemetry allowed the normal lint command to pass.
 - Review: `tests/reports/RBAC_REVIEW.md`. Device/browser execution and APK rebuild not run; no production coverage inferred.
 
+## QR preparation checkpoint
+
+- Baseline: `96fc133ab788d1da972e0b484ab9bcc20fbd4da8`; new tests/docs are in the commit containing this entry.
+- Date: 18 October 2026, Asia/Karachi; local Windows QA workstation.
+- Command: `python -m pytest tests/qr -q -p no:cacheprovider --junitxml=tests/reports/qr-preparation.xml`.
+- Result: 21 passed, 11 skipped in 0.76s. Passing cases verify independent QA helpers and synthetic SVG/PNG/PDF QR decoding; skipped cases are live acceptance, not passes.
+- Command: `python -m pytest tests/integration/test_qr_domain_fixtures.py -q -p no:cacheprovider --junitxml=tests/reports/qr-domain-fixtures.xml`.
+- Result: 1 passed in 4.79s against isolated PostgreSQL 16/Redis 7 and an actual in-process HTTP backend. Script creates four unique score-domain fixtures, reads their states and preserves the existing baseline match. No QR service is present or claimed.
+- QR tools: Python 3.12, pytest 8.3.5, httpx 0.28.1, Pillow 12.3.0, PyMuPDF 1.28.2, zxing-cpp 3.1.1, qrcode 8.2.
+- Salt preflight: both private values supplied in ignored local environment file; all three static Day 2 wiring checks blocked. No CI secret or deployed signing configuration verified. See `tests/qr/SALT_HANDOFF.md`.
+- Scope: QA files, domain-fixture integration test, traceability and evidence only; no UI, service, migration, shared configuration or CI edits.
+- Exact-value scan found no real salts in tracked/unignored files under 2 MB; private environment file is Git-ignored. No key material printed in reports.
+
 ## Recording rules
 
 For each run append exact tested SHA, timestamp, target URL/environment, command,

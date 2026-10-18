@@ -11,7 +11,7 @@ No Day 2 live acceptance pass is claimed. Evidence: `tests/reports/EVIDENCE.md`.
 | FR-3.1 Athlete identity and social graph | Day 2 implementation not found | Profile/VOD and concurrent follow suite pending | None | Not run |
 | FR-3.2 Solo streaming and overlays | Day 2 stream service not found; existing `backend/app/core/realtime.py` needs integration review | `tests/day2/signing_oracle.py` supplies independent signing; live key/media suite pending | None | Partial QA tooling; acceptance not run |
 | FR-3.3 Four-way co-stream and handoff | Day 2 implementation not found | Capacity, layout, replay and real host-drop suite pending | None | Not run |
-| FR-4.1 Dynamic cryptographic QR | Day 2 implementation not found | Independent oracle available; state-transition, export and scan-race suite pending | None | Partial QA tooling; acceptance not run |
+| FR-4.1 Dynamic cryptographic QR | Day 2 implementation not found in inspected baseline | `tests/qr/test_qr_live.py`: metadata/HMAC, all states/entities, counters, exports, redirects, completion and adapter-driven postponement; `tests/qr/prepare_domain_fixtures.py` | None | QA suite prepared; live acceptance not run |
 | FR-4.2 Zero-account guest experience | Guest web implementation not found | Grid initial-load and cart staging suite pending | None | Not run |
 | FR-4.3 Guest write boundary | Existing `backend/app/core/security.py` needs Day 2 guest checks | Direct chat/checkout/event rejection and member controls pending | None | Not run |
 | FR-4.4 Progressive registration and atomic merge | Day 2 implementation not found | Oracle extracts active-cart signing fields; atomicity/replay/stock suite pending | None | Partial QA tooling; acceptance not run |
@@ -37,6 +37,21 @@ service cases. Full domain suite: 155 passed, 4 PostgreSQL cases skipped.
 QR/VOD acceptance remains not run. Required host work: authorized postponement
 route, effective schedule/score status, committed notification delivery, guest
 subscription contract and the required Day 2 socket path.
+
+### QR preparation and salt gate
+
+`tests/qr/README.md` contains the all-state/entity acceptance checklist.
+`tests/reports/qr-preparation.xml`: 21 local helper checks passed, 11 live tests
+skipped (target/fixtures not configured). SVG/PNG/PDF decoder checks use synthetic
+assets and do not prove service exports. `tests/reports/qr-domain-fixtures.xml`:
+1 real local HTTP/PostgreSQL fixture-setup check passed; shared backend untouched.
+Source: `tests/qr/prepare_domain_fixtures.py` and
+`tests/integration/test_qr_domain_fixtures.py`.
+
+**Release blocker:** `tests/qr/SALT_HANDOFF.md`. Private keys are preserved in
+Git-ignored local configuration. DAY2_SALT example config, API/worker forwarding,
+backend loading, CI provisioning and independent deployed signatures are not
+complete. The hourly checkpoint retains this gate. No actual key is in Git.
 
 ## Preserved Day 1 records
 
