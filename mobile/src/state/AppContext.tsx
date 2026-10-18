@@ -141,8 +141,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const found = ACCOUNTS.find(a => a.email.toLowerCase() === email.trim().toLowerCase());
     if (!found || password !== DEMO_PASSWORD) return 'Use a listed demo account and the demo password.';
     await secureSet('demo_email', found.email);
-    setFixtures(FIXTURES); setStandings(STANDINGS); setProducts(PRODUCTS); setClub(await readCache('demo_club', CLUB));
-    setAccount(found);
+    setFixtures(await readCache('demo_fixtures', FIXTURES)); setStandings(STANDINGS); setProducts(PRODUCTS); setClub(await readCache('demo_club', CLUB));
+    setAccount({ ...found, user_id: `demo-${found.role}` });
     return null;
   }, [demoMode, serverUrl]);
   const logout = useCallback(async () => { tokenRef.current = null; await secureDelete('session_v1'); await secureDelete('demo_email'); setAccount(null); setCart([]); setReceipt(null); setFixtures([]); setStandings([]); setClub(EMPTY_CLUB); setProducts([]); setTenant(null); setLeagues([]); setKnownClubs([]); }, []);
@@ -288,6 +288,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return null;
   }, [api, cart, demoMode, online]);
   const queueAction = useCallback(async (action: Omit<PendingAction, 'action_id' | 'queued_at' | 'status'>) => {
+    if (demoMode) {
+      if (action.type === 'score_event' && !canScore(account?.role)) throw new Error('Only an organizer or administrator can score a match.');
+      if (action.type === 'roster_transfer' && !canManageRoster(account?.role)) throw new Error('Only a manager or administrator can change a roster.');
+      if (action.type === 'score_event') {
+        const match = fixtures.find(item => item.id === action.payload.match_id);
+        if (!match || match.status !== 'Live') throw new Error('This match is not live. Choose a live match to record an event.');
+        const payload = action.payload.payload as { team_id?: string; event_type?: string; compensates?: string };
+        const original = payload.compensates ? match.events.find(event => event.id === payload.compensates) : undefined;
+        if (payload.compensates && (!original || match.events.some(event => event.label === `Correction: ${original.id}`))) throw new Error('Choose an existing event that has not already been corrected.');
+        const home = original ? original.team === match.home : payload.team_id === match.homeId;
+        // Demo values are fixture configuration; never branch on sport or event names.
+        const configuredPoints: Record<string, number[]> = { 'match-001': [1], 'match-002': [1, 2, 3], 'match-003': [1, 0] };
+        const points = original ? -Number(original.clock) : (configuredPoints[match.id]?.[match.eventTypes.indexOf(payload.event_type ?? '')] ?? 1);
+        const score = match.score.split(':').map(value => Number(value.trim()));
+        score[home ? 0 : 1] = Math.max(0, (score[home ? 0 : 1] || 0) + points);
+        const updated = fixtures.map(item => item.id === match.id ? { ...item, version: item.version + 1, score: score.join(' : '), events: [...item.events, { id: String(action.payload.event_id), clock: String(original ? 0 : points), label: original ? `Correction: ${original.id}` : (payload.event_type ?? 'Score').replaceAll('_', ' '), team: home ? item.home : item.away }] } : item);
+        await writeCache('demo_fixtures', updated); setFixtures(updated);
+      } else {
+        if (!club.roster.some(player => (player.id ?? player.name) === action.payload.player_id)) throw new Error('Select a player currently in this demo roster.');
+        const updated = { ...club, roster: club.roster.filter(player => (player.id ?? player.name) !== action.payload.player_id) };
+        await writeCache('demo_club', updated); setClub(updated);
+      }
+      // Demo actions live in a separate history and are never submitted to the server.
+      return { ...action, action_id: `demo-${Date.now()}`, queued_at: utcSeconds(), status: 'applied' as const, resolution: 'Demo simulation applied on this device only.' };
+    }
     const saved: PendingAction = { ...action, owner: `${serverUrl}:${account?.user_id ?? 'demo'}`, action_id: `mobile-${Date.now()}-${Math.floor(Math.random() * 10000)}`, queued_at: utcSeconds(), status: 'pending' };
     await saveAction(saved);
     setQueue(current => [...current, saved]);
@@ -309,7 +334,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     }
     return { ...saved, resolution: demoMode ? 'Demo mode: saved locally only. Turn off Demo data and sign in to submit live events.' : 'Saved offline. It will sync after reconnection.' };
-  }, [account, api, demoMode, online, refreshMatch, serverUrl]);
+  }, [account, api, club, demoMode, fixtures, online, refreshMatch, serverUrl]);
   const syncQueue = useCallback(async () => {
     if (!online || syncing) return;
     setSyncing(true);

@@ -24,7 +24,7 @@ export default function Roster() {
     { id: 'release', title: 'Release', detail: 'Remove from squad' },
   ] as const;
   useEffect(() => {
-    if (demoMode) { setPlayer('player-alpha-1'); setDestination('squad-alpha-2'); setDestinations([{ id: 'squad-alpha-2', clubName: 'North Stars', leagueId: 'league-alpha-1' }]); return; }
+    if (demoMode) { setPlayer(current => club.roster.some(p => (p.id ?? p.name) === current) ? current : (club.roster[0]?.id ?? club.roster[0]?.name ?? '')); setDestination('squad-alpha-2'); setDestinations([{ id: 'squad-alpha-2', clubName: 'North Stars', leagueId: 'league-alpha-1' }]); return; }
     if (club.roster[0]?.id) setPlayer(current => club.roster.some(p => p.id === current) ? current : club.roster[0].id ?? '');
     void rosterDestinations().then(result => { setDestinations(result); setDestination(current => result.some(d => d.id === current) ? current : result[0]?.id ?? ''); }).catch(error => { setFeedbackError(true); setFeedback(error instanceof Error ? error.message : 'Destinations could not be loaded.'); });
   }, [club.roster, demoMode, rosterDestinations]);
@@ -60,7 +60,7 @@ export default function Roster() {
     </View>
     {action === 'add' ? <><Field label="Player name" value={name} onChangeText={setName} /><Field label="Position" value={position} onChangeText={setPosition} placeholder="e.g. Defender" /><Field label="Shirt number" value={number} onChangeText={setNumber} keyboardType="numeric" /></> : <>
       <Text style={{ color: C.text, fontWeight: '800', marginBottom: 8 }}>Player</Text>
-      {club.roster.filter(p => Boolean(p.id)).map(p => <Card key={p.id} accent={player === p.id} onPress={() => setPlayer(p.id ?? '')}><Text style={{ color: C.text, fontWeight: '700' }}>{p.name}{player === p.id ? '  ✓' : ''}</Text></Card>)}
+      {club.roster.filter(p => demoMode || Boolean(p.id)).map(p => <Card key={p.id ?? p.name} accent={player === (p.id ?? p.name)} onPress={() => setPlayer(p.id ?? p.name)}><Text style={{ color: C.text, fontWeight: '700' }}>{p.name}{player === (p.id ?? p.name) ? '  ✓' : ''}</Text></Card>)}
       {!club.roster.some(p => p.id) && demoMode ? <Field label="Demo player ID" value={player} onChangeText={setPlayer} /> : null}
       {!club.roster.length && !demoMode ? <Muted>No players were returned for this club.</Muted> : null}
       {action !== 'release' ? <><Text style={{ color: C.text, fontWeight: '800', marginVertical: 8 }}>Destination club</Text>{destinations.map(d => <Card key={d.id} accent={destination === d.id} onPress={() => setDestination(d.id)}><Text style={{ color: C.text, fontWeight: '700' }}>{d.clubName}{destination === d.id ? '  ✓' : ''}</Text></Card>)}{!destinations.length ? <Muted>No destination squads were returned. Connect and refresh the roster.</Muted> : null}</> : null}
