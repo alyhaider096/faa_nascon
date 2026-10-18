@@ -88,3 +88,30 @@ def test_guest_websocket_receives_score_without_member_jwt(client, server, reset
         assert response.status_code == 201
         update = json.loads(socket.recv(timeout=5))
         assert update["type"] == "score" and update["home_score"] == 1 and update["away_score"] == 1
+
+
+def test_metrics_track_websocket_and_privacy_revokes_member_token(client, server, reset):
+    from websockets.sync.client import connect
+
+    token = _login(client)
+    headers = {"Authorization": f"Bearer {token}"}
+    assert client.get("/api/v1/me", headers=headers).status_code == 200
+
+    ws_base = server.replace("http://", "ws://")
+    with connect(f"{ws_base}/ws/v1/matches/match-m1?token={token}") as socket:
+        assert json.loads(socket.recv(timeout=5))["type"] == "hello"
+        metrics = client.get("/metrics")
+        assert metrics.status_code == 200
+        assert "nascon_active_ws_connections 1\n" in metrics.text
+        assert "nascon_active_streams_total " in metrics.text
+        assert "nascon_stream_bitrate_kbps " in metrics.text
+
+    erased = client.delete("/audit/v1/privacy/user/user-viewer")
+    assert erased.status_code == 200
+    assert erased.json() == {
+        "user_id": "user-viewer", "status": "anonymized",
+        "pii_retained": False, "tokens_wiped": True,
+    }
+    rejected = client.get("/api/v1/me", headers=headers)
+    assert rejected.status_code == 401
+    assert rejected.json()["error"]["code"] == "UNAUTHENTICATED"

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 import os
+import threading
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -19,6 +21,8 @@ from ..domain import day2
 from .common import run_tx
 
 router = APIRouter()
+_media_sample_lock = threading.Lock()
+_media_sample = {"at": 0.0, "bytes": 0}
 
 
 def _bearer(request: Request) -> str | None:
@@ -45,6 +49,24 @@ def _kick_media_publishers(stream_key: str) -> None:
                 # A publisher can close between the list and kick operations.
                 if exc.code != 404:
                     raise
+
+
+def _media_metrics() -> tuple[int, float]:
+    """Read aggregate active-path and receive bitrate state from MediaMTX."""
+    try:
+        with urllib.request.urlopen("http://media:9997/v3/paths/list", timeout=2) as result:
+            paths = json.load(result).get("items", [])
+    except (OSError, ValueError, urllib.error.URLError):
+        return 0, 0.0
+    active = [path for path in paths if path.get("ready")]
+    received = sum(int(path.get("bytesReceived", 0)) for path in active)
+    now = time.monotonic()
+    with _media_sample_lock:
+        elapsed = now - float(_media_sample["at"])
+        delta = max(0, received - int(_media_sample["bytes"]))
+        bitrate = (delta * 8 / elapsed / 1000) if _media_sample["at"] and elapsed > 0 else 0.0
+        _media_sample.update({"at": now, "bytes": received})
+    return len(active), bitrate
 
 
 @router.post("/audit/v1/stream/key")
@@ -113,7 +135,9 @@ async def moderation(request: Request):
 
 @router.get("/metrics")
 async def metrics():
-    return Response(await run_tx(day2.metrics), media_type="text/plain; version=0.0.4")
+    active_streams, bitrate = await run_in_threadpool(_media_metrics)
+    text = await run_tx(day2.metrics, realtime.hub.connection_count(), active_streams, bitrate)
+    return Response(text, media_type="text/plain; version=0.0.4")
 
 
 @router.delete("/audit/v1/privacy/user/{user_id}")

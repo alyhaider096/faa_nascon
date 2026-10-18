@@ -352,13 +352,12 @@ def moderation(conn, body: dict) -> dict:
             "muted_users": muted, "dlq_status": dlq, "signature": sign_day2(room, signed)}
 
 
-def metrics(conn) -> str:
-    active_streams = conn.execute("SELECT count(*) n FROM day2_stream_keys WHERE status='active'").fetchone()["n"]
+def metrics(conn, active_ws: int = 0, active_streams: int = 0, bitrate_kbps: float = 0.0) -> str:
     dlq = conn.execute("SELECT count(*) n FROM day2_dlq").fetchone()["n"]
     scans = conn.execute("SELECT COALESCE(sum(scan_count),0) n FROM day2_qr_mappings").fetchone()["n"]
-    return ("# TYPE nascon_active_ws_connections gauge\nnascon_active_ws_connections 0\n"
+    return ("# TYPE nascon_active_ws_connections gauge\n" + f"nascon_active_ws_connections {active_ws}\n"
             "# TYPE nascon_active_streams_total gauge\n" + f"nascon_active_streams_total {active_streams}\n"
-            "# TYPE nascon_stream_bitrate_kbps gauge\nnascon_stream_bitrate_kbps 0\n"
+            "# TYPE nascon_stream_bitrate_kbps gauge\n" + f"nascon_stream_bitrate_kbps {bitrate_kbps:.3f}\n"
             "# TYPE nascon_dlq_depth gauge\n" + f"nascon_dlq_depth {dlq}\n"
             "# TYPE nascon_qr_scans_total counter\n" + f"nascon_qr_scans_total {scans}\n")
 
@@ -367,9 +366,29 @@ def erase_user(conn, user_id: str) -> dict:
     exists = _player_exists(conn, user_id) or conn.execute("SELECT 1 FROM users WHERE user_id=%s", (user_id,)).fetchone()
     if not exists: raise _player_not_found(user_id)
     conn.execute("UPDATE ref_players SET name='Anonymized Player' WHERE player_id=%s", (user_id,))
-    conn.execute("UPDATE users SET email=user_id || '@anonymized.invalid',display_name='Anonymized User' WHERE user_id=%s OR player_id=%s",
+    conn.execute("UPDATE users SET email=user_id || '@anonymized.invalid',display_name='Anonymized User',"
+                 "token_version=token_version+1 WHERE user_id=%s OR player_id=%s",
                  (user_id, user_id))
     conn.execute("UPDATE day2_guest_tokens SET valid=false,user_id=NULL WHERE user_id=%s", (user_id,))
+    conn.execute("DELETE FROM day2_follows WHERE user_id=%s", (user_id,))
+    conn.execute("DELETE FROM day2_sanctions WHERE user_id=%s", (user_id,))
+    conn.execute("UPDATE day2_moderation_messages SET result=jsonb_set(result,'{sender}',to_jsonb('anonymized'::text)) "
+                 "WHERE result->>'sender'=%s", (user_id,))
+    conn.execute("DELETE FROM day2_merge_receipts WHERE registered_user_id=%s", (user_id,))
+    conn.execute("DELETE FROM day2_carts WHERE user_id=%s", (user_id,))
+    conn.execute("UPDATE day2_dlq SET event=event-'user_id'-'sender' "
+                 "WHERE event ? 'user_id' OR event ? 'sender'")
+    orders = conn.execute("SELECT order_id,response FROM orders WHERE customer_id=%s FOR UPDATE", (user_id,)).fetchall()
+    for order in orders:
+        response = order["response"]
+        receipt = response.get("receipt", {})
+        payload = {**receipt.get("payload", {}), "customer_id": "anonymized"}
+        receipt = {**receipt, "payload": payload, "signature": sign_record(order["order_id"], payload)}
+        receipt.pop("pdf_base64", None)
+        response = {**response, "receipt": receipt}
+        conn.execute("UPDATE orders SET customer_id='anonymized',pdf=NULL,response=%s WHERE order_id=%s",
+                     (Jsonb(response), order["order_id"]))
+    conn.execute("UPDATE roster_audit SET who='anonymized' WHERE who=%s", (user_id,))
     return {"user_id": user_id, "status": "anonymized", "pii_retained": False, "tokens_wiped": True}
 
 

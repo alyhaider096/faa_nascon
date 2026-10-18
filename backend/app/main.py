@@ -19,7 +19,7 @@ from .core import db, realtime
 from .core.config import get_settings
 from .core.errors import DomainError, install_error_handlers
 from .core.middleware import BodyLimitMiddleware, RateLimitMiddleware
-from .core.security import decode_token
+from .core.security import authenticate_token
 
 log = logging.getLogger("nascon.main")
 
@@ -93,7 +93,7 @@ def create_app() -> FastAPI:
                 if not await run_in_threadpool(_guest_token_valid, token):
                     raise DomainError(401, "UNAUTHENTICATED")
             else:
-                decode_token(token or "")
+                await run_in_threadpool(authenticate_token, token or "")
         except DomainError:
             await ws.close(code=4401)
             return
