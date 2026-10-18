@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import time
 
 
 def _login(client, email="viewer@nascon.test"):
@@ -155,3 +156,47 @@ def test_completed_recording_is_indexed_once_and_selected_for_vod(client, reset,
 
     with tx() as conn:
         conn.execute("DELETE FROM day2_vod_assets WHERE vod_id=%s", (row["vod_id"],))
+
+
+def test_production_costream_controls_and_socket_disconnect_handoff(client, server, reset):
+    from websockets.sync.client import connect
+
+    created = client.post("/audit/v1/costream/session", json={
+        "session_id": "cs-live-handoff", "host_player_id": "player-alpha-1",
+        "participants": ["player-alpha-1", "player-alpha-2"], "layout": "grid_2",
+    })
+    assert created.status_code == 201
+    token = _login(client, "player@nascon.test")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    invited = client.post(
+        "/api/v1/costream/sessions/cs-live-handoff/actions", headers=headers,
+        json={"action": "invite", "player_id": "player-beta-1"},
+    )
+    assert invited.status_code == 200
+    assert invited.json()["pending_invitations"] == ["player-beta-1"]
+    assert len(invited.json()["invitation"]["signature"]) == 64
+
+    muted = client.post(
+        "/api/v1/costream/sessions/cs-live-handoff/actions", headers=headers,
+        json={"action": "mute", "player_id": "player-alpha-2"},
+    )
+    assert muted.status_code == 200
+    assert muted.json()["muted_participants"] == ["player-alpha-2"]
+
+    ws_base = server.replace("http://", "ws://")
+    with connect(f"{ws_base}/ws/costream/cs-live-handoff?token={token}") as socket:
+        hello = json.loads(socket.recv(timeout=5))
+        assert hello["player_id"] == "player-alpha-1"
+
+    deadline = time.monotonic() + 2
+    state = None
+    while time.monotonic() < deadline:
+        state = client.get("/api/v1/public/costream/cs-live-handoff").json()
+        if state["active_host"] == "player-alpha-2":
+            break
+        time.sleep(0.05)
+    assert state["active_host"] == "player-alpha-2"
+    assert state["handoff_occurred"] is True
+    assert state["participant_count"] == 1
+    assert state["chat_room_id"] == "chat-cs-live-handoff"

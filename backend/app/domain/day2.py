@@ -511,6 +511,144 @@ def public_costream(conn, session_id: str) -> dict:
     return row["response"]
 
 
+def _costream_participant_ids(response: dict) -> list[str]:
+    return [item if isinstance(item, str) else item.get("player_id")
+            for item in response.get("active_participants", [])]
+
+
+def _resign_costream(response: dict) -> dict:
+    signed = {key: response.get(key) for key in (
+        "active_host", "handoff_occurred", "layout", "participant_count", "session_id", "status"
+    )}
+    return {**response, "signature": sign_day2(response["session_id"], signed)}
+
+
+def _remove_costream_participant(response: dict, player_id: str) -> dict:
+    active = [participant for participant in _costream_participant_ids(response) if participant != player_id]
+    was_host = response.get("active_host") == player_id
+    status = "active" if active else "terminated"
+    updated = {
+        **response,
+        "active_participants": active,
+        "participant_count": len(active),
+        "active_host": active[0] if was_host and active else response.get("active_host") if active else None,
+        "handoff_occurred": bool(was_host and active),
+        "status": status,
+        "composite_playback_url": response.get("composite_playback_url") if active else None,
+        "muted_participants": [p for p in response.get("muted_participants", []) if p in active],
+    }
+    if updated.get("spotlight_player_id") not in active:
+        updated["spotlight_player_id"] = None
+    return _resign_costream(updated)
+
+
+def costream_member(conn, session_id: str, player_id: str) -> bool:
+    row = conn.execute("SELECT response FROM day2_costream_sessions WHERE session_id=%s", (session_id,)).fetchone()
+    return bool(row and player_id in _costream_participant_ids(row["response"]))
+
+
+def costream_disconnect(conn, session_id: str, player_id: str) -> dict | None:
+    row = conn.execute(
+        "SELECT response FROM day2_costream_sessions WHERE session_id=%s FOR UPDATE", (session_id,)
+    ).fetchone()
+    if row is None or player_id not in _costream_participant_ids(row["response"]):
+        return None
+    response = _remove_costream_participant(row["response"], player_id)
+    conn.execute(
+        "UPDATE day2_costream_sessions SET response=%s,updated_at=now() WHERE session_id=%s",
+        (Jsonb(response), session_id),
+    )
+    return response
+
+
+def costream_action(conn, session_id: str, actor_player_id: str | None, actor_role: str, body: dict) -> dict:
+    action = body.get("action")
+    allowed = {"set_layout", "mute", "spotlight", "kick", "invite", "join", "leave", "stop"}
+    if not isinstance(action, str) or action not in allowed:
+        raise validation_error(["action"])
+    row = conn.execute(
+        "SELECT response FROM day2_costream_sessions WHERE session_id=%s FOR UPDATE", (session_id,)
+    ).fetchone()
+    if row is None:
+        raise DomainError(404, "STREAM_NOT_FOUND", "Co-stream session does not exist.", {"session_id": session_id})
+    response = row["response"]
+    active = _costream_participant_ids(response)
+    elevated = actor_role in {"league_organizer", "super_admin"}
+    host_control = elevated or (actor_player_id is not None and response.get("active_host") == actor_player_id)
+    if action not in {"join", "leave"} and not host_control:
+        raise DomainError(403, "FORBIDDEN", "Only the active host or an organizer can control the room.")
+
+    if action == "set_layout":
+        layout = body.get("layout")
+        if layout not in LAYOUTS:
+            raise validation_error(["layout"])
+        if (layout == "solo" and len(active) > 1) or (layout == "grid_2" and len(active) > 2):
+            raise DomainError(400, "UNSUPPORTED_LAYOUT", "Layout cannot fit the active participant count.")
+        response = {**response, "layout": layout, "handoff_occurred": False}
+    elif action in {"mute", "spotlight", "kick", "invite"}:
+        target = body.get("player_id")
+        if not isinstance(target, str) or not target:
+            raise validation_error(["player_id"])
+        if not _player_exists(conn, target):
+            raise _player_not_found(target)
+        if action == "invite":
+            pending = [p for p in response.get("pending_invitations", []) if p not in active]
+            if target not in active and target not in pending:
+                if len(active) + len(pending) >= 4:
+                    raise DomainError(409, "COSTREAM_SESSION_FULL", "Co-stream sessions support at most four participants.")
+                pending.append(target)
+            invitation_payload = {"action": "invite", "player_id": target, "session_id": session_id}
+            response = {**response, "pending_invitations": pending,
+                        "invitation": {**invitation_payload,
+                                       "signature": sign_day2(session_id, invitation_payload)},
+                        "handoff_occurred": False}
+        elif target not in active:
+            raise DomainError(404, "PLAYER_NOT_FOUND", "Player is not active in this co-stream.",
+                              {"player_id": target})
+        elif action == "mute":
+            muted = list(response.get("muted_participants", []))
+            if target not in muted:
+                muted.append(target)
+            response = {**response, "muted_participants": muted, "handoff_occurred": False}
+        elif action == "spotlight":
+            response = {**response, "layout": "spotlight", "spotlight_player_id": target,
+                        "handoff_occurred": False}
+        else:
+            response = _remove_costream_participant(response, target)
+    elif action == "join":
+        if actor_player_id is None:
+            raise DomainError(403, "FORBIDDEN", "A linked player identity is required to join.")
+        pending = list(response.get("pending_invitations", []))
+        if actor_player_id not in active:
+            if actor_player_id not in pending:
+                raise DomainError(403, "FORBIDDEN", "A valid room invitation is required.")
+            if len(active) >= 4:
+                raise DomainError(409, "COSTREAM_SESSION_FULL", "Co-stream sessions support at most four participants.")
+            active.append(actor_player_id)
+        response = {**response, "active_participants": active, "participant_count": len(active),
+                    "pending_invitations": [p for p in pending if p != actor_player_id],
+                    "status": "active", "handoff_occurred": False,
+                    "composite_playback_url": response.get("composite_playback_url") or
+                    f"http://{get_settings().media_public_host}:8888/costream/{session_id}/index.m3u8"}
+        if response.get("active_host") is None:
+            response["active_host"] = actor_player_id
+    elif action == "leave":
+        if actor_player_id is None:
+            raise DomainError(403, "FORBIDDEN", "A linked player identity is required to leave.")
+        response = _remove_costream_participant(response, actor_player_id)
+    else:  # stop
+        response = _resign_costream({**response, "status": "terminated", "active_host": None,
+                                     "active_participants": [], "participant_count": 0,
+                                     "handoff_occurred": False, "composite_playback_url": None})
+
+    response = _resign_costream(response)
+    conn.execute(
+        "UPDATE day2_costream_sessions SET response=%s,updated_at=now() WHERE session_id=%s",
+        (Jsonb(response), session_id),
+    )
+    return response
+
+
 def public_profile(conn, entity_type: str, entity_id: str) -> dict:
     if entity_type == "player":
         row = conn.execute(

@@ -158,6 +158,18 @@ async def public_costream(session_id: str):
     return await run_tx(day2.public_costream, session_id)
 
 
+@router.post("/api/v1/costream/sessions/{session_id}/actions")
+async def production_costream_action(session_id: str, request: Request):
+    claims = authenticate(request)
+    if claims.role not in {"player", "league_organizer", "super_admin"}:
+        raise forbidden()
+    response = await run_tx(
+        day2.costream_action, session_id, claims.player_id, claims.role, await read_json_object(request)
+    )
+    await realtime.hub.publish(session_id, {"type": "costream_state", "session": response})
+    return response
+
+
 def _object_chunks(response, chunk_size: int = 256 * 1024):
     try:
         while data := response.read(chunk_size):
