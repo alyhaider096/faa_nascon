@@ -1,0 +1,12 @@
+[
+  {"entity_id": "match-m1", "entity_type": "match", "state": "in_progress"},
+  {"entity_id": "qa-match-preview", "entity_type": "match", "state": "upcoming"},
+  {"entity_id": "qa-match-completed", "entity_type": "match", "state": "completed"},
+  {"entity_id": "qa-match-postponed", "entity_type": "match", "state": "postponed"},
+  {"entity_id": "qa-match-cancelled", "entity_type": "match", "state": "cancelled"},
+  {"entity_id": "qa-match-abandoned", "entity_type": "match", "state": "abandoned"},
+  {"entity_id": "qa-match-to-postpone", "entity_type": "match", "state": "in_progress"},
+  {"entity_id": "player-alpha-1", "entity_type": "player"},
+  {"entity_id": "club-alpha-1", "entity_type": "club"},
+  {"entity_id": "cs-session-101", "entity_type": "costream"}
+]

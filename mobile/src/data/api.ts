@@ -10,11 +10,11 @@ export type Projection = { match_id: string; sport_id: string; league_id: string
 export type RosterHistory = { player_id: string; league_id: string; current_squad_id: string | null; parent_squad_id: string | null; history: unknown[] };
 export class ApiError extends Error { constructor(message: string, public status: number, public code?: string) { super(message); } }
 
-export async function request<T>(base: string, path: string, token: string | null, body?: unknown): Promise<T> {
+export async function request<T>(base: string, path: string, token: string | null, body?: unknown, method: 'GET' | 'POST' | 'DELETE' = body === undefined ? 'GET' : 'POST'): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 12000);
   try {
-    const response = await fetch(`${base}${path}`, { method: body === undefined ? 'GET' : 'POST', signal: controller.signal,
+    const response = await fetch(`${base}${path}`, { method, signal: controller.signal,
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
     const data = await response.json().catch(() => null);

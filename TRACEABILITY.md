@@ -1,5 +1,73 @@
 # Requirement Traceability
 
+## Day 2 QA baseline - 18 October 2026
+
+Baseline inspected: `c9ad86fb44730cb02f3556727596ceec8b4530fa`.
+The Day 1 records below are preserved historical claims, not new execution results.
+No Day 2 live acceptance pass is claimed. Evidence: `tests/reports/EVIDENCE.md`.
+
+| Requirement | Source / implementation status at baseline | Automated verification | Live evidence | Current state |
+| --- | --- | --- | --- | --- |
+| FR-3.1 Athlete identity and social graph | Day 2 implementation not found | Profile/VOD and concurrent follow suite pending | None | Not run |
+| FR-3.2 Solo streaming and overlays | Day 2 stream service not found; existing `backend/app/core/realtime.py` needs integration review | `tests/day2/signing_oracle.py` supplies independent signing; live key/media suite pending | None | Partial QA tooling; acceptance not run |
+| FR-3.3 Four-way co-stream and handoff | Day 2 implementation not found | Capacity, layout, replay and real host-drop suite pending | None | Not run |
+| FR-4.1 Dynamic cryptographic QR | Day 2 implementation not found in inspected baseline | `tests/qr/test_qr_live.py`: metadata/HMAC, all states/entities, counters, exports, redirects, completion and adapter-driven postponement; `tests/qr/prepare_domain_fixtures.py` | None | QA suite prepared; live acceptance not run |
+| FR-4.2 Zero-account guest experience | Guest web implementation not found | Grid initial-load and cart staging suite pending | None | Not run |
+| FR-4.3 Guest write boundary | Existing `backend/app/core/security.py` needs Day 2 guest checks | Direct chat/checkout/event rejection and member controls pending | None | Not run |
+| FR-4.4 Progressive registration and atomic merge | Day 2 implementation not found | Oracle extracts active-cart signing fields; atomicity/replay/stock suite pending | None | Partial QA tooling; acceptance not run |
+| FR-5.2 Notification bus and DLQ | Existing `backend/app/core/queue.py` needs Day 2 contract review | Durable retry, depth and restart/concurrency suite pending | None | Not run |
+| FR-5.3 Automated moderation | Day 2 implementation not found | Oracle requires explicit flagged_count; dictionary/flood/race suite pending | None | Partial QA tooling; acceptance not run |
+| NFR-1 Score latency | Existing `backend/app/core/realtime.py` | 25-client p95 probe pending | None | Not run |
+| NFR-2 Concurrency scale | Deployed target not provided | Exact 550-VU k6 profile pending | None | Not run |
+| NFR-6 Observability | Day 2 metrics not found | Prometheus parsing and transition probes pending | None | Not run |
+| NFR-8 Guest accessibility | Guest web implementation not found | Grid keyboard/contrast/ARIA/target checks pending | None | Not run |
+| NFR-9 Privacy | Day 2 erase/telemetry implementation not found | PII/token deletion timing and telemetry inspection pending | None | Not run |
+
+`COVERAGE_DAY2.json` will be generated only from actual module coverage after
+the five Day 2 modules are identified. Missing measurements are not zero or a pass.
+Oracle self-checks do not count as production module coverage or live acceptance.
+
+### Domain integration support for FR-3.2 / FR-4.1
+
+`backend/DAY2_DOMAIN_HANDOFF.md` records existing completion, projection,
+standings and subscription interfaces. `tests/domain/test_day2_handoff.py`
+verifies completion persistence, replay, compensation, rollback and schedule
+postponement boundaries; `tests/reports/domain-handoff.xml` has 3 passing local
+service cases. Full domain suite: 155 passed, 4 PostgreSQL cases skipped.
+QR/VOD acceptance remains not run. Required host work: authorized postponement
+route, effective schedule/score status, committed notification delivery, guest
+subscription contract and the required Day 2 socket path.
+
+### QR preparation and salt gate
+
+`tests/qr/README.md` contains the all-state/entity acceptance checklist.
+`tests/reports/qr-preparation.xml`: 21 local helper checks passed, 11 live tests
+skipped (target/fixtures not configured). SVG/PNG/PDF decoder checks use synthetic
+assets and do not prove service exports. `tests/reports/qr-domain-fixtures.xml`:
+1 real local HTTP/PostgreSQL fixture-setup check passed; shared backend untouched.
+Source: `tests/qr/prepare_domain_fixtures.py` and
+`tests/integration/test_qr_domain_fixtures.py`.
+
+**Release blocker:** `tests/qr/SALT_HANDOFF.md`. Private keys are preserved in
+Git-ignored local configuration. DAY2_SALT example config, API/worker forwarding,
+backend loading, CI provisioning and independent deployed signatures are not
+complete. The hourly checkpoint retains this gate. No actual key is in Git.
+
+## Preserved Day 1 records
+
+### Current RBAC regression update
+
+See `tests/reports/RBAC_REVIEW.md`: the existing five-role/mobile/tenant suite
+passed 67 tests against disposable PostgreSQL/Redis. New
+`tests/integration/test_mobile_event_roles.py` passed 22 cases for all-role
+score/correction writes, direct/offline replay, persisted readback and league
+scope. Evidence: `rbac-baseline.xml` and `mobile-event-roles.xml` under
+`tests/reports/`. No backend authorization failure reproduced. Mobile feedback,
+correction confirmation and post-sync score refresh fixes in
+`mobile/src/app/score.tsx` and `mobile/src/state/AppContext.tsx` pass typecheck/lint;
+rebuilt APK/device acceptance remains not run. This updates FR-5.1/NFR-4 evidence,
+without claiming Day 2 guest enforcement or deployed acceptance.
+
 Domain implementation and tests are available on the backend/fatima-domain branch.
 Status distinguishes tested services from host/mobile integration still pending.
 

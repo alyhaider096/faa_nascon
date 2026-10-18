@@ -24,7 +24,7 @@ export default function Roster() {
     { id: 'release', title: 'Release', detail: 'Remove from squad' },
   ] as const;
   useEffect(() => {
-    if (demoMode) { setPlayer('player-alpha-1'); setDestination('squad-alpha-2'); setDestinations([{ id: 'squad-alpha-2', clubName: 'North Stars', leagueId: 'league-alpha-1' }]); return; }
+    if (demoMode) { setPlayer(current => club.roster.some(p => (p.id ?? p.name) === current) ? current : (club.roster[0]?.id ?? club.roster[0]?.name ?? '')); setDestination('squad-alpha-2'); setDestinations([{ id: 'squad-alpha-2', clubName: 'North Stars', leagueId: 'league-alpha-1' }]); return; }
     if (club.roster[0]?.id) setPlayer(current => club.roster.some(p => p.id === current) ? current : club.roster[0].id ?? '');
     void rosterDestinations().then(result => { setDestinations(result); setDestination(current => result.some(d => d.id === current) ? current : result[0]?.id ?? ''); }).catch(error => { setFeedbackError(true); setFeedback(error instanceof Error ? error.message : 'Destinations could not be loaded.'); });
   }, [club.roster, demoMode, rosterDestinations]);
@@ -45,8 +45,8 @@ export default function Roster() {
       if (!history.current_squad_id) throw new Error('This player is not in a squad. Refresh the roster and try again.');
       if (!demoMode && action !== 'release' && !destinations.some(d => d.id === destination && d.leagueId === history.league_id)) throw new Error('Choose a destination squad in this league.');
       const loanEnd = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
-      await queueAction({ type: 'roster_transfer', base_version: history.history.length, label: `${action} · ${club.roster.find(p => p.id === player)?.name ?? player}`, payload: { request_id: `req-${Date.now()}`, league_id: history.league_id, player_id: player, type: action, from_squad_id: history.current_squad_id, to_squad_id: action === 'release' ? null : destination, effective_date: new Date().toISOString().slice(0, 10), loan_end_date: action === 'loan' ? loanEnd : null, reason: reason.trim(), requested_by: account?.user_id ?? account?.email } });
-      setFeedbackError(false); setFeedback(online ? 'Action saved. Open the sync queue to review its result.' : 'Saved offline. It will sync after reconnection.');
+      const result = await queueAction({ type: 'roster_transfer', base_version: history.history.length, label: `${action} · ${club.roster.find(p => p.id === player)?.name ?? player}`, payload: { request_id: `req-${Date.now()}`, league_id: history.league_id, player_id: player, type: action, from_squad_id: history.current_squad_id, to_squad_id: action === 'release' ? null : destination, effective_date: new Date().toISOString().slice(0, 10), loan_end_date: action === 'loan' ? loanEnd : null, reason: reason.trim(), requested_by: account?.user_id ?? account?.email } });
+      setFeedbackError(result.status === 'rejected'); setFeedback(result.resolution ?? 'Awaiting server confirmation.');
     } catch (error) { setFeedbackError(true); setFeedback(error instanceof Error ? error.message : 'Could not save this roster action.'); }
   }
   return <Page eyebrow="Club manager tools" title="Manage roster" subtitle="Changes are recorded in the offline action queue until confirmed by the server.">
@@ -60,7 +60,7 @@ export default function Roster() {
     </View>
     {action === 'add' ? <><Field label="Player name" value={name} onChangeText={setName} /><Field label="Position" value={position} onChangeText={setPosition} placeholder="e.g. Defender" /><Field label="Shirt number" value={number} onChangeText={setNumber} keyboardType="numeric" /></> : <>
       <Text style={{ color: C.text, fontWeight: '800', marginBottom: 8 }}>Player</Text>
-      {club.roster.filter(p => Boolean(p.id)).map(p => <Card key={p.id} accent={player === p.id} onPress={() => setPlayer(p.id ?? '')}><Text style={{ color: C.text, fontWeight: '700' }}>{p.name}{player === p.id ? '  ✓' : ''}</Text></Card>)}
+      {club.roster.filter(p => demoMode || Boolean(p.id)).map(p => <Card key={p.id ?? p.name} accent={player === (p.id ?? p.name)} onPress={() => setPlayer(p.id ?? p.name)}><Text style={{ color: C.text, fontWeight: '700' }}>{p.name}{player === (p.id ?? p.name) ? '  ✓' : ''}</Text></Card>)}
       {!club.roster.some(p => p.id) && demoMode ? <Field label="Demo player ID" value={player} onChangeText={setPlayer} /> : null}
       {!club.roster.length && !demoMode ? <Muted>No players were returned for this club.</Muted> : null}
       {action !== 'release' ? <><Text style={{ color: C.text, fontWeight: '800', marginVertical: 8 }}>Destination club</Text>{destinations.map(d => <Card key={d.id} accent={destination === d.id} onPress={() => setDestination(d.id)}><Text style={{ color: C.text, fontWeight: '700' }}>{d.clubName}{destination === d.id ? '  ✓' : ''}</Text></Card>)}{!destinations.length ? <Muted>No destination squads were returned. Connect and refresh the roster.</Muted> : null}</> : null}

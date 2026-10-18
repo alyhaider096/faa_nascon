@@ -12,6 +12,8 @@ export default function Club() {
     <SectionTitle title="First team roster" action={`${club.roster.length} players`} />
     {club.roster.length ? club.roster.map(p => <Card key={p.id ?? p.name}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 13 }}><Text style={{ color: C.accent, fontSize: 24, fontWeight: '800', width: 32 }}>{p.number}</Text><View style={{ flex: 1 }}><Text style={{ color: C.text, fontSize: 16, fontWeight: '800' }}>{p.name}</Text><Muted>{p.position} {p.role}</Muted></View></View></Card>) : <Muted>No players registered for this club yet.</Muted>}
     {canManageRoster(account?.role) ? <Button title="Manage roster  →" onPress={() => router.push('/roster')} /> : null}
+    {(account?.role === 'player' || account?.role === 'super_admin') ? <Button title="Open creator studio  →" onPress={() => router.push('/creator')} /> : null}
+    <Button title="Scan match QR" secondary onPress={() => router.push('/scanner')} />
     <Button title="App settings" secondary onPress={() => router.push('/settings')} />
     <Button title={demoMode ? 'Switch demo account' : 'Sign out'} secondary onPress={() => void logout().then(() => router.replace('/login'))} />
     <SectionTitle title="Club staff" />

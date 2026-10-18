@@ -2,6 +2,7 @@
   "expo": {
     "name": "LeagueOps",
     "slug": "leagueops",
+    "scheme": "nascon",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/leagueops-icon.png",
@@ -12,17 +13,39 @@
     },
     "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Scan LeagueOps match and profile QR codes.",
+        "NSMicrophoneUsageDescription": "Broadcast live match audio when you start a creator stream."
+      }
     },
     "android": {
       "package": "com.faa.leagueops",
-      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#071522",
         "foregroundImage": "./assets/leagueops-icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
-    "plugins": ["expo-router", "expo-secure-store", "./plugins/withCleartextTraffic"]
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "./plugins/withCleartextTraffic",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow LeagueOps to scan match and profile QR codes",
+          "microphonePermission": "Allow LeagueOps to broadcast live match audio",
+          "recordAudioAndroid": true,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      "expo-video",
+      "@config-plugins/react-native-webrtc",
+      "expo-font"
+    ],
+    "web": {
+      "output": "single"
+    }
   }
 }
