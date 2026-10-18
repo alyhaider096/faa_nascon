@@ -1,5 +1,22 @@
 # Day 2 evidence index
 
+## Pixel evidence completion - 18 October 2026, 14:00 PKT
+
+Physical Pixel Appium run: **2 passed, 1 skipped in 60.54 seconds**.
+The match and co-stream deep-link tests passed, including foreground package,
+under-two-second deep-link command and expected screen text. Cross-surface chat
+was skipped because RUN_CROSS_SURFACE was not configured; no chat pass claimed.
+Command: RUN_APPIUM_DEVICE=1 ANDROID_DEVICE_UDID=<connected Pixel> python -m pytest
+tests/appium -q -p no:cacheprovider --junitxml=tests/reports/appium-report.xml.
+Tested source: 7f4e1c5 (same application/test source as 758d46c); tracked release
+APK mobile/release/app-release.apk, existing local Appium server port 4723.
+Actual report replaces the earlier three-skipped placeholder. Grid status was
+rechecked ready with exactly three nodes. Required workflow, test directories,
+reports, coverage JSON and traceability are tracked. Workflow trigger is push
+to main; its successful execution and repository secrets remain unverified.
+This final commit changes evidence/documentation only after code freeze.
+
+
 ## Required artifact audit - 13:59 PKT
 
 COVERAGE_DAY2.json now contains measured functional-region percentages from the final raw report. Exact per-function denominators and scope are in tests/reports/day2-coverage-mapping.json. This mapping excludes module initialization and dependencies outside the three selected source files; it is not proof of whole-stack coverage. Values below 85% are failures, not rounded into passes.
