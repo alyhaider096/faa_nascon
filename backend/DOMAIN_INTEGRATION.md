@@ -1,5 +1,10 @@
 # Fatima domain integration for Abdullah
 
+For the current mounted HTTP/socket interfaces and Day 2 completion/postponement
+integration gaps, see [DAY2_DOMAIN_HANDOFF.md](DAY2_DOMAIN_HANDOFF.md). The wiring
+instructions below describe the original domain fragment; verify the existing
+host integration before mounting duplicate routers or adding a second worker.
+
 This branch supplies sports, fixtures, league registration, signed event streams,
 score projections and standings. It does not introduce a second application
 entrypoint or own Docker, roster, store, auth, the global reset route or sync.

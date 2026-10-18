@@ -27,6 +27,17 @@ No Day 2 live acceptance pass is claimed. Evidence: `tests/reports/EVIDENCE.md`.
 the five Day 2 modules are identified. Missing measurements are not zero or a pass.
 Oracle self-checks do not count as production module coverage or live acceptance.
 
+### Domain integration support for FR-3.2 / FR-4.1
+
+`backend/DAY2_DOMAIN_HANDOFF.md` records existing completion, projection,
+standings and subscription interfaces. `tests/domain/test_day2_handoff.py`
+verifies completion persistence, replay, compensation, rollback and schedule
+postponement boundaries; `tests/reports/domain-handoff.xml` has 3 passing local
+service cases. Full domain suite: 155 passed, 4 PostgreSQL cases skipped.
+QR/VOD acceptance remains not run. Required host work: authorized postponement
+route, effective schedule/score status, committed notification delivery, guest
+subscription contract and the required Day 2 socket path.
+
 ## Preserved Day 1 records
 
 Domain implementation and tests are available on the backend/fatima-domain branch.

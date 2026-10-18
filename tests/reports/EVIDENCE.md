@@ -17,6 +17,16 @@
 - DAY1_BASE_SHA: organizer confirmation still needed; baseline tip is not assumed to be the locked SHA.
 - Private configuration and handbook remain outside the repository.
 
+## Domain integration handoff checkpoint
+
+- Source: first QA commit `86920225642da50e5b1e4f6b82eebe7c7feab1bd` plus the test/docs in the commit containing this entry.
+- Environment: same isolated Windows QA Python 3.12, pytest 8.3.5, SQLAlchemy 2.0.40; SQLite fixtures, no deployed target.
+- Focused command: `python -m pytest tests/domain/test_day2_handoff.py -q --junitxml=tests/reports/domain-handoff.xml`.
+- Result: 3 passed in 0.20s; persistence/replay/compensation/rollback and postponement boundary checked.
+- Full command: `python -m pytest tests/domain -q --junitxml=tests/reports/domain-regression.xml`.
+- Result: 155 passed, 4 skipped, 1 dependency deprecation warning in 2.46s. The PostgreSQL cases remain skipped.
+- Handoff: `backend/DAY2_DOMAIN_HANDOFF.md`. No production logic was changed. No live QR/media/socket claims.
+
 ## Recording rules
 
 For each run append exact tested SHA, timestamp, target URL/environment, command,
@@ -27,3 +37,7 @@ tokens, environment dumps or private handbook contents in reports.
 
 For each push record local SHA, branch, remote SHA verification, timestamp and
 available GitHub receipt/workflow. A local commit timestamp is not a push receipt.
+
+## First successful push
+
+18 October 2026, approximately 11:09 PKT: pushed QA checkpoint 86920225642da50e5b1e4f6b82eebe7c7feab1bd to origin/main. Git push reported c9ad86f..8692022 main -> main; git ls-remote origin refs/heads/main returned the identical full SHA. This receipt entry will be included in the next checkpoint; local clock and Git output do not substitute for a GitHub server event timestamp.
