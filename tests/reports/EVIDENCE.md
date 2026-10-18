@@ -1,5 +1,13 @@
 # Day 2 evidence index
 
+## Documentation status update - 18 October 2026, 12:36 PKT
+
+- Latest fetched main: `61efc02593985bc71b57be6806b44c10139c1e07`; no new backend commit at update time.
+- User confirmed the team is waiting for Abdullah before integrated execution.
+- TRACEABILITY.md now has a current FR/NFR/gate matrix with owners, evidence and next actions. Older baseline mappings and run history preserved.
+- No tests or live connectivity probes rerun for this documentation-only update. Existing local failures and skipped/deployed-not-run distinctions remain explicit.
+- Salt runtime/CI wiring, direct guest rejection, hosting/reset, media/QR/merge, device/Grid/load readiness and measured Day 2 coverage remain unresolved until evidenced.
+
 ## Initial QA checkpoint
 
 - Date: 18 October 2026, Asia/Karachi.

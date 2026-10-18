@@ -1,5 +1,47 @@
 # Requirement Traceability
 
+## Current release status - 18 October 2026, 12:36 PKT
+
+**Waiting for Abdullah's integrated backend and reachable API/media addresses.**
+Latest fetched main at this update: `61efc02593985bc71b57be6806b44c10139c1e07`.
+Frontend/APK commits `330d475` and `c3848bd` are integrated. No newer backend
+commit was present on fetched main. Deployment state has not been established.
+This is a documentation update; no tests or health probes were rerun for it.
+The latest actual contract capture tested `4ef28e1` on isolated local services;
+do not transfer its results to an untested teammate build or deployment.
+
+| Requirement / gate | Current status | Owner / next action | Existing evidence |
+| --- | --- | --- | --- |
+| FR-3.1 athlete profiles/social graph | Pending integrated backend and live verification | Abdullah supplies agreed reads/follow contract; Ali integrates UI; Fatima verifies | `tests/reports/FRONTEND_REVIEW_330d475.md` |
+| FR-3.2 streaming/overlays/VOD | Missing local Day 2 routes; deployed not run | Abdullah supplies real ingest/playback/recording; Ali fixes publisher lifecycle; Fatima verifies real media and timing | `tests/reports/INTEGRATION_CONTRACT_STATUS.md` |
+| FR-3.3 co-stream | Missing local commands/public read; deployed not run | Abdullah supplies commands, invitations and authoritative handoff; Ali fixes host gating/playback mapping | Integration status and frontend review reports |
+| FR-4.1 QR | Local routes missing; QR acceptance suite prepared; deployed not run | Abdullah supplies mappings/exports/effective status and postponement route; Fatima executes on agreed isolated fixtures | `tests/qr/README.md`, `tests/reports/qr-preparation.xml` |
+| FR-4.2 guest access | Frontend routes present; backend public reads/session absent in tested source | Abdullah integrates hosting/public reads/session and exact Day 2 reset seed | `tests/reports/integration-contract-examples.json` |
+| FR-4.3 guest write guard | **FAILED on tested local backend**; deployment not run | Abdullah enforces exact 403 GUEST_WRITE_FORBIDDEN for direct guest chat/checkout/events; Fatima retests | Captured audit checkout/events returned 201; member checkout 401 |
+| FR-4.4 atomic merge | Local merge/member-cart read absent; frontend cart continuation finding open | Abdullah supplies atomic merge/replay/stock behavior; Ali hydrates checkout cart; Fatima verifies persistence/races | Integration status and frontend review reports |
+| FR-5.2 notifications/DLQ | Existing member socket partial; Day 2 frames/retries/durability pending | Abdullah supplies sequenced score/chat/invite/host frames and persistent DLQ | Actual member frames in integration examples JSON |
+| FR-5.3 moderation | Day 2 service not found in inspected source; acceptance not run | Abdullah integrates filter/rate/concurrency behavior; Fatima verifies exact audit cases | Planned cases in private QA handbook; independent signing tooling only |
+| NFR-1 score latency | Not run | Verify 25-client p95 <500 ms and separate DOM timing on real target | No timing pass claimed |
+| NFR-2 load | Not run | Verify exact 500+50 VU profile; runner readiness still to establish | No k6 pass/report claimed |
+| NFR-6 observability | Not verified | Parse real metrics and verify transitions | No metrics pass claimed |
+| NFR-8 accessibility/Grid | Not run on real hosted guest app | Establish Grid readiness and parallel Chrome/Firefox sessions, then keyboard/contrast/ARIA checks | Source/build checks do not replace browser acceptance |
+| NFR-9 privacy | Not run | Verify erase timing/token invalidation and authorized storage inspection | No privacy pass claimed |
+| Day 2 salt | **Runtime/CI wiring and live signature verification unresolved** | Abdullah loads/forwards keys privately, preserves Day 1 signing and verifies running Day 2 signatures | `tests/qr/SALT_HANDOFF.md`; real values remain Git-ignored |
+| APK/Appium | APK tracked; independent device acceptance pending | Ali supplies identified replacement build after fixes; Fatima runs native links and cross-surface chat | Previous reported Pixel timings are not independent QA evidence |
+| Build/ancestry/coverage | Clean npm install issue open; organizer base and production coverage unresolved | Owners resolve build/runtime gates; obtain DAY1_BASE_SHA; measure five modules before generating coverage JSON | Review reports; no fabricated COVERAGE_DAY2.json |
+
+Retained local results: 176 passed / 15 skipped in `checkpoint-1205.xml`, the
+earlier 67 RBAC checks and 22 all-role event checks, and separate fixture checks.
+These runs have different scopes and must not be summed into one acceptance
+count. Demo-only state changes do not satisfy connected requirements. Three demo
+findings remain recorded in `tests/reports/DEMO_REVIEW_c3848bd.md`.
+
+When Abdullah's build is available, record its exact SHA, configured API/media
+URLs and reset permission, then verify health/reset, Day 2 signatures and guest
+rejection before QR/merge/media, browser/device and load acceptance. Recheck
+test/tool readiness rather than assuming every planned suite is already runnable.
+Earlier sections below are dated evidence/history and do not override this status.
+
 ## Integration contract capture - 18 October 2026, 12:13 PKT
 
 Tested SHA: `4ef28e1d595fd3ec0757c053b4501f2611a1b3f8`.
