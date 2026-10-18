@@ -172,7 +172,7 @@ export function GuestExperience({ id, mode, noticeState }: Props) {
   return <View style={styles.screen}>
     <View style={styles.topbar}>
       <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.canGoBack() ? router.back() : router.replace('/login')} style={styles.iconButton}><Ionicons name="arrow-back" color={C.text} size={22} /></Pressable>
-      <View style={{ flex: 1 }}><Text style={styles.brand}>LEAGUEOPS LIVE</Text><Text style={styles.connection}>{connection === 'live' ? '● LIVE CONNECTION' : connection.toUpperCase()}</Text></View>
+      <View style={{ flex: 1 }}><Text style={styles.brand}>LEAGUEOPS LIVE</Text><Text style={[styles.connection, error ? { color: C.danger } : {}]}>{error ? 'CONNECTION UNAVAILABLE' : connection === 'live' ? '● LIVE CONNECTION' : connection.toUpperCase()}</Text></View>
       <Pressable accessibilityRole="button" accessibilityLabel="Scan another QR" onPress={() => router.push('/scanner')} style={styles.iconButton}><Ionicons name="qr-code-outline" color={C.text} size={22} /></Pressable>
     </View>
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -197,10 +197,10 @@ export function GuestExperience({ id, mode, noticeState }: Props) {
           </View>
           <View style={styles.sideColumn}>
             <View testID="pinned-merch-card" style={styles.merchCard}>
-              <Text style={styles.cardKicker}>PINNED MATCHDAY DROP</Text>
+              <Text style={styles.merchKicker}>PINNED MATCHDAY DROP</Text>
               <Text style={styles.productName}>{product?.name ?? 'No product pinned'}</Text>
-              {product ? <><Text style={styles.productMeta}>{product.variant} · {money(product.priceMinor, product.currency)}</Text><Pressable testID="add-to-guest-cart-btn" accessibilityRole="button" accessibilityLabel={`Add ${product.name}, ${product.variant}, to guest cart`} onPress={() => void addProduct()} style={styles.primaryButton}><Ionicons name="bag-add-outline" size={20} color={C.bg} /><Text style={styles.primaryText}>Add to cart</Text></Pressable></> : <Text style={styles.muted}>The organizer has not pinned merchandise.</Text>}
-              <View style={styles.cartRow}><Text style={styles.muted}>Guest cart</Text><Text testID="guest-cart-count" accessibilityLabel={`${cartCount} items in guest cart`} style={styles.cartCount}>{cartCount}</Text></View>
+              {product ? <><Text style={styles.productMeta}>{product.variant} · {money(product.priceMinor, product.currency)}</Text><Pressable testID="add-to-guest-cart-btn" accessibilityRole="button" accessibilityLabel={`Add ${product.name}, ${product.variant}, to guest cart`} onPress={() => void addProduct()} style={styles.primaryButton}><Ionicons name="bag-add-outline" size={20} color={C.bg} /><Text style={styles.primaryText}>Add to cart</Text></Pressable></> : <Text style={styles.merchMuted}>The organizer has not pinned merchandise.</Text>}
+              <View style={styles.cartRow}><Text style={styles.merchMuted}>Guest cart</Text><Text testID="guest-cart-count" accessibilityLabel={`${cartCount} items in guest cart`} style={styles.cartCount}>{cartCount}</Text></View>
               <Pressable accessibilityRole="button" onPress={() => account ? router.push('/checkout') : rememberAndAuthenticate('checkout')} style={styles.checkoutButton}><Text style={styles.checkoutText}>Checkout securely</Text></Pressable>
             </View>
             <View style={styles.chatCard}>
@@ -209,7 +209,7 @@ export function GuestExperience({ id, mode, noticeState }: Props) {
                 {messages.length ? messages.map(message => <View key={message.id} style={styles.message}><Text style={styles.sender}>{message.sender}</Text><Text style={styles.messageText}>{message.text}</Text></View>) : <Text style={styles.muted}>No messages yet. Be the first member to join the conversation.</Text>}
               </ScrollView>
               <View style={styles.composeRow}>
-                <TextInput testID="chat-input-field" accessibilityLabel="Chat message" value={chatText} onChangeText={setChatText} placeholder="Write a message" placeholderTextColor="#81909C" style={styles.chatInput} onSubmitEditing={() => void sendChat()} returnKeyType="send" />
+                <TextInput testID="chat-input-field" accessibilityLabel="Chat message" value={chatText} onChangeText={setChatText} placeholder="Write a message" placeholderTextColor="#BAC9DB" style={styles.chatInput} onSubmitEditing={() => void sendChat()} returnKeyType="send" />
                 <Pressable testID="chat-send-btn" accessibilityRole="button" accessibilityLabel="Send chat message" disabled={!chatText.trim() || busy} onPress={() => void sendChat()} style={({ pressed }) => [styles.sendButton, (!chatText.trim() || busy) && { opacity: .45 }, pressed && { transform: [{ scale: .96 }] }]}><Ionicons name="send" color={C.bg} size={19} /></Pressable>
               </View>
             </View>
@@ -223,8 +223,8 @@ export function GuestExperience({ id, mode, noticeState }: Props) {
           <Pressable accessibilityRole="button" accessibilityLabel="Close sign in" onPress={() => setModalVisible(false)} style={[styles.iconButton, { alignSelf: 'flex-end' }]}><Ionicons name="close" color={C.text} size={22} /></Pressable>
           <Text style={styles.modalEyebrow}>YOUR MATCH STAYS OPEN</Text><Text style={styles.modalTitle}>Sign in to continue</Text>
           <Text style={styles.modalCopy}>Guests can watch and shop. Sign in to send messages or checkout; your cart and playback position will be restored.</Text>
-          <TextInput accessibilityLabel="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholder="Email" placeholderTextColor="#81909C" style={styles.modalInput} />
-          <TextInput accessibilityLabel="Password" value={password} onChangeText={setPassword} secureTextEntry placeholder="Password" placeholderTextColor="#81909C" style={styles.modalInput} />
+          <TextInput accessibilityLabel="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholder="Email" placeholderTextColor="#BAC9DB" style={styles.modalInput} />
+          <TextInput accessibilityLabel="Password" value={password} onChangeText={setPassword} secureTextEntry placeholder="Password" placeholderTextColor="#BAC9DB" style={styles.modalInput} />
           {authError ? <Text accessibilityRole="alert" style={styles.authError}>{authError}</Text> : null}
           <Pressable accessibilityRole="button" disabled={busy} onPress={() => void completeAuthentication()} style={styles.primaryButton}>{busy ? <ActivityIndicator color={C.bg} /> : <Text style={styles.primaryText}>Sign in and resume</Text>}</Pressable>
         </View>
@@ -234,8 +234,8 @@ export function GuestExperience({ id, mode, noticeState }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#090C0E' },
-  topbar: { minHeight: 72, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#11171B' },
+  screen: { flex: 1, backgroundColor: C.bg },
+  topbar: { minHeight: 72, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.surface },
   iconButton: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: '#222B31' },
   brand: { color: C.text, fontWeight: '900', fontSize: 15, letterSpacing: 1.2 },
   connection: { color: '#7FE1BA', fontSize: 10, fontWeight: '900', letterSpacing: 1.1, marginTop: 3 },
@@ -243,25 +243,25 @@ const styles = StyleSheet.create({
   center: { minHeight: 420, alignItems: 'center', justifyContent: 'center', gap: 14 },
   heroRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 16, marginBottom: 20 },
   eyebrow: { color: C.accent, fontWeight: '900', fontSize: 11, letterSpacing: 1.6, marginBottom: 7 },
-  title: { color: C.text, fontSize: 30, lineHeight: 34, fontWeight: '900', fontFamily: DISPLAY_FONT, textTransform: 'uppercase' },
+  title: { color: C.text, fontSize: 28, lineHeight: 34, fontWeight: '900', fontFamily: DISPLAY_FONT, textTransform: 'uppercase' },
   statePill: { backgroundColor: '#22352D', borderRadius: 18, paddingVertical: 8, paddingHorizontal: 12 },
   stateText: { color: '#8CE8C2', fontWeight: '900', fontSize: 10, letterSpacing: 1 },
   mainGrid: { gap: 18 }, mainGridWide: { flexDirection: 'row', alignItems: 'flex-start' }, mediaColumn: { flex: 1.55, minWidth: 0 }, sideColumn: { flex: 1, minWidth: 0, gap: 16 },
-  scoreBanner: { minHeight: 96, backgroundColor: '#171E23', marginTop: 12, borderRadius: 22, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18 },
+  scoreBanner: { minHeight: 96, backgroundColor: C.surface, marginTop: 12, borderRadius: 22, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18 },
   team: { flex: 1 }, teamName: { color: C.text, textAlign: 'center', fontWeight: '800', fontSize: 15 }, score: { color: '#FFFFFF', fontSize: 34, fontWeight: '900', letterSpacing: 1.5 },
   sectionTitle: { color: C.text, fontSize: 19, fontWeight: '900', marginTop: 24, marginBottom: 12 },
   timelineRow: { minHeight: 54, flexDirection: 'row', alignItems: 'center', backgroundColor: '#151B20', borderRadius: 16, paddingHorizontal: 15, marginBottom: 8 },
   sequence: { color: C.accent, width: 48, fontWeight: '900' }, timelineText: { color: C.text, flex: 1, fontSize: 14 },
-  merchCard: { backgroundColor: '#F2E6C9', borderRadius: 24, padding: 20 }, cardKicker: { color: '#936D36', fontWeight: '900', fontSize: 10, letterSpacing: 1.3 },
+  merchCard: { backgroundColor: '#F2E6C9', borderRadius: 24, padding: 20 }, merchMuted: { color: '#51483C', fontSize: 14, lineHeight: 21 }, merchKicker: { color: '#6D4A1E', fontWeight: '900', fontSize: 10, letterSpacing: 1.3 }, cardKicker: { color: C.gold, fontWeight: '900', fontSize: 10, letterSpacing: 1.3 },
   productName: { color: '#141516', fontSize: 24, lineHeight: 28, fontWeight: '900', marginTop: 10 }, productMeta: { color: '#56504A', marginTop: 7, marginBottom: 10, fontWeight: '700' },
   primaryButton: { minHeight: 50, borderRadius: 25, backgroundColor: C.accent, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, paddingHorizontal: 18, marginTop: 12 }, primaryText: { color: C.bg, fontWeight: '900', fontSize: 15 },
   cartRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }, cartCount: { minWidth: 34, height: 34, borderRadius: 17, textAlign: 'center', textAlignVertical: 'center', paddingTop: Platform.OS === 'web' ? 8 : 0, backgroundColor: '#15191C', color: '#FFFFFF', fontWeight: '900' },
   checkoutButton: { minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: '#272C2E' }, checkoutText: { color: '#FFFFFF', fontWeight: '800' },
-  chatCard: { backgroundColor: '#171E23', borderRadius: 24, padding: 18 }, chatHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, chatTitle: { color: C.text, fontSize: 21, fontWeight: '900', marginTop: 4 },
+  chatCard: { backgroundColor: C.surface, borderRadius: 24, padding: 18 }, chatHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, chatTitle: { color: C.text, fontSize: 21, fontWeight: '900', marginTop: 4 },
   messageList: { maxHeight: 270, minHeight: 150, marginVertical: 14 }, message: { backgroundColor: '#222B31', borderRadius: 14, padding: 12, marginBottom: 8 }, sender: { color: C.accent, fontSize: 11, fontWeight: '900', marginBottom: 4 }, messageText: { color: C.text, lineHeight: 20 },
   composeRow: { flexDirection: 'row', gap: 9, alignItems: 'center' }, chatInput: { minHeight: 50, flex: 1, borderRadius: 25, backgroundColor: '#29333B', color: C.text, paddingHorizontal: 17, fontSize: 16 }, sendButton: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', backgroundColor: C.accent },
   muted: { color: C.muted, fontSize: 14, lineHeight: 21 }, error: { backgroundColor: '#3C2428', borderRadius: 18, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 }, errorText: { color: C.text, flex: 1 }, smallButton: { minHeight: 44, paddingHorizontal: 15, borderRadius: 22, backgroundColor: C.danger, justifyContent: 'center' }, smallButtonText: { color: '#221114', fontWeight: '900' },
   notification: { minHeight: 48, borderRadius: 24, backgroundColor: C.accent, flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 16, marginBottom: 14 }, notificationText: { color: C.bg, fontWeight: '900', flex: 1 },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,.78)', alignItems: 'center', justifyContent: 'center', padding: 18 }, modalCard: { width: '100%', maxWidth: 460, borderRadius: 28, backgroundColor: '#171E23', padding: 22 }, modalEyebrow: { color: C.accent, fontSize: 10, fontWeight: '900', letterSpacing: 1.4 }, modalTitle: { color: C.text, fontSize: 29, fontWeight: '900', marginTop: 7 }, modalCopy: { color: C.muted, lineHeight: 21, marginVertical: 12 }, modalInput: { minHeight: 52, borderRadius: 16, backgroundColor: '#29333B', color: C.text, paddingHorizontal: 16, fontSize: 16, marginTop: 10 }, authError: { color: C.danger, marginTop: 10 },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,.78)', alignItems: 'center', justifyContent: 'center', padding: 18 }, modalCard: { width: '100%', maxWidth: 460, borderRadius: 28, backgroundColor: C.surface, padding: 22 }, modalEyebrow: { color: C.accent, fontSize: 10, fontWeight: '900', letterSpacing: 1.4 }, modalTitle: { color: C.text, fontSize: 29, fontWeight: '900', marginTop: 7 }, modalCopy: { color: C.muted, lineHeight: 21, marginVertical: 12 }, modalInput: { minHeight: 52, borderRadius: 16, backgroundColor: '#29333B', color: C.text, paddingHorizontal: 16, fontSize: 16, marginTop: 10 }, authError: { color: C.danger, marginTop: 10 },
 });
 

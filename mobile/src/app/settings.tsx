@@ -18,9 +18,9 @@ export default function Settings() {
     <SectionTitle title="Server connection" />
     <Field label="Backend address" value={draft} onChangeText={setDraft} keyboardType="url" placeholder="http://192.168.1.10:8080" />
     <Button title="Save server address" onPress={() => void save()} />
-    <Muted>Use the backend laptop’s hotspot IP. The API port is 8080.</Muted>
+    <Muted>Use the backend laptop’s hotspot IP on port 8080. Save the address, turn Demo data off, then sign in with your real account.</Muted>
     <SectionTitle title="Data source" />
-    <Card><View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><View style={{ flex: 1 }}><Text style={{ color: C.text, fontWeight: '800' }}>Demo data</Text><Muted>Preview screens without the backend</Muted></View><Switch value={demoMode} onValueChange={value => void setDemoMode(value)} trackColor={{ true: C.accentDark }} thumbColor={C.accent} /></View></Card>
+    <Card><View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><View style={{ flex: 1 }}><Text style={{ color: C.text, fontWeight: '800' }}>Demo data</Text><Muted>{demoMode ? 'Local sample data. No backend connection is required.' : 'Real accounts and server data. The backend must be reachable.'}</Muted></View><Switch accessibilityLabel="Use demo data" value={demoMode} onValueChange={value => void setDemoMode(value)} trackColor={{ true: C.accentDark }} thumbColor={C.accent} /></View></Card>
     <Button title="Refresh and cache server data" secondary onPress={() => void refreshCache().then(() => { setFeedbackError(false); setFeedback('Refresh finished. See any connection warning above.'); })} />
     {feedback ? <Text accessibilityRole="alert" style={{ color: feedbackError ? C.danger : C.accent, marginTop: 10 }}>{feedback}</Text> : null}
     <SectionTitle title="Account" />

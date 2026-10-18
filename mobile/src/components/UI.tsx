@@ -16,7 +16,7 @@ export function AppMark({ size = 64 }: { size?: number }) {
 export function Page({ children, title, eyebrow, subtitle }: { children: React.ReactNode; title: string; eyebrow?: string; subtitle?: string }) {
   const { tenant, loading, dataError, account, refreshCache } = useApp();
   const tenantName = tenant?.branding.display_name ?? tenant?.name ?? TENANT.name;
-  return <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
+  return <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
     {eyebrow ? <View style={styles.pageTop}><Text style={styles.eyebrow}>{eyebrow.toUpperCase()}</Text><View style={styles.tenantBadge} accessibilityLabel={`${tenantName} tenant`}><Text style={[styles.tenantInitial, tenant?.branding.primary_color ? { backgroundColor: tenant.branding.primary_color, color: '#FFFFFF' } : {}]}>{tenantName[0]}</Text><Text numberOfLines={1} style={styles.tenantName}>{tenantName.toUpperCase()}</Text></View></View> : null}
     <Text style={styles.title}>{title}</Text>
     {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
@@ -37,35 +37,35 @@ export function Button({ title, onPress, secondary, disabled, danger, loading }:
   </Pressable>;
 }
 export function Field({ label, value, onChangeText, placeholder, secureTextEntry, keyboardType, multiline }: { label: string; value: string; onChangeText: (value: string) => void; placeholder?: string; secureTextEntry?: boolean; keyboardType?: 'default' | 'email-address' | 'numeric' | 'url'; multiline?: boolean }) {
-  return <View style={{ marginBottom: 14 }}><Text style={styles.label}>{label}</Text><TextInput style={[styles.input, multiline && { minHeight: 90, textAlignVertical: 'top' }]} value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor="#71879C" secureTextEntry={secureTextEntry} keyboardType={keyboardType} multiline={multiline} autoCapitalize="none" accessibilityLabel={label} /></View>;
+  return <View style={{ marginBottom: 14 }}><Text style={styles.label}>{label}</Text><TextInput style={[styles.input, multiline && { minHeight: 90, textAlignVertical: 'top' }]} value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor="#AEBED2" secureTextEntry={secureTextEntry} keyboardType={keyboardType} multiline={multiline} autoCapitalize="none" accessibilityLabel={label} /></View>;
 }
 export function Pill({ text, tone = 'mint' }: { text: string; tone?: 'mint' | 'gold' | 'red' | 'blue' }) {
   const bg = tone === 'gold' ? '#58442A' : tone === 'red' ? '#582E38' : tone === 'blue' ? '#254961' : '#184A43';
-  const fg = tone === 'gold' ? C.gold : tone === 'red' ? C.danger : tone === 'blue' ? C.blue : C.accent;
+  const fg = tone === 'gold' ? C.gold : tone === 'red' ? C.danger : tone === 'blue' ? C.blue : '#9DEBD6';
   return <View style={[styles.pill, { backgroundColor: bg }]}><Text style={{ color: fg, fontWeight: '700', fontSize: 11 }}>{text}</Text></View>;
 }
 export function SectionTitle({ title, action }: { title: string; action?: string }) { return <View style={styles.sectionRow}><Text style={styles.sectionTitle}>{title}</Text>{action ? <Text style={styles.sectionAction}>{action}</Text> : null}</View>; }
 export function Muted({ children }: { children: React.ReactNode }) { return <Text style={styles.muted}>{children}</Text>; }
 
 const styles = StyleSheet.create({
-  page: { flexGrow: 1, backgroundColor: C.bg, paddingHorizontal: 20, paddingTop: 25, paddingBottom: 110 },
+  page: { flexGrow: 1, backgroundColor: C.bg, width: '100%', maxWidth: 960, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 120 },
   pageTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 8 },
   eyebrow: { color: C.accent, letterSpacing: 1.5, fontWeight: '800', fontSize: 11, flexShrink: 1 },
   tenantBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: '48%', flexShrink: 1 },
   tenantInitial: { color: C.bg, backgroundColor: C.accent, width: 19, height: 19, borderRadius: 5, textAlign: 'center', textAlignVertical: 'center', fontWeight: '900', fontSize: 12 },
   tenantName: { color: C.muted, fontSize: 10, fontWeight: '800', letterSpacing: .6, flexShrink: 1 },
-  title: { color: C.text, fontSize: 36, fontWeight: '900', fontFamily: DISPLAY_FONT, letterSpacing: -.7, marginBottom: 6, textTransform: 'uppercase' },
-  subtitle: { color: C.muted, fontSize: 15, lineHeight: 22, marginBottom: 24 },
-  card: { backgroundColor: C.surface, borderRadius: 18, padding: 17, marginBottom: 11 },
-  accentCard: { backgroundColor: C.surface2 },
-  button: { backgroundColor: C.accent, minHeight: 52, paddingHorizontal: 20, borderRadius: 28, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginVertical: 7, elevation: 2, shadowColor: '#000000', shadowOpacity: .18, shadowRadius: 7, shadowOffset: { width: 0, height: 3 } },
-  secondaryButton: { backgroundColor: C.surface2 },
+  title: { color: C.text, fontSize: 32, lineHeight: 38, fontWeight: '900', fontFamily: DISPLAY_FONT, letterSpacing: -.5, marginBottom: 8 },
+  subtitle: { color: C.muted, fontSize: 15, lineHeight: 22, marginBottom: 20 },
+  card: { backgroundColor: C.surface, borderRadius: 20, borderWidth: 1, borderColor: C.line, padding: 18, marginBottom: 14 },
+  accentCard: { backgroundColor: C.surface, borderColor: C.line },
+  button: { backgroundColor: C.accent, minHeight: 52, paddingHorizontal: 20, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginVertical: 7, elevation: 2, shadowColor: '#000000', shadowOpacity: .18, shadowRadius: 7, shadowOffset: { width: 0, height: 3 } },
+  secondaryButton: { backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line },
   dangerButton: { backgroundColor: C.danger },
   buttonText: { color: C.bg, fontSize: 15, fontWeight: '800' },
   label: { color: C.muted, fontSize: 12, fontWeight: '700', marginBottom: 7, textTransform: 'uppercase', letterSpacing: .8 },
-  input: { backgroundColor: C.surface2, borderRadius: 16, color: C.text, minHeight: 50, paddingHorizontal: 16, fontSize: 16 },
+  input: { borderWidth: 1, borderColor: C.line, backgroundColor: C.surface2, borderRadius: 14, color: C.text, minHeight: 50, paddingHorizontal: 16, fontSize: 16 },
   pill: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 50 },
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 19, marginBottom: 12 },
-  sectionTitle: { color: C.text, fontSize: 21, fontWeight: '900', fontFamily: DISPLAY_FONT, textTransform: 'uppercase' }, sectionAction: { color: C.accent, fontSize: 12, fontWeight: '700' },
+  sectionTitle: { color: C.text, fontSize: 20, fontWeight: '800', fontFamily: DISPLAY_FONT }, sectionAction: { color: C.accent, fontSize: 12, fontWeight: '700' },
   muted: { color: C.muted, fontSize: 14, lineHeight: 21 },
 });
