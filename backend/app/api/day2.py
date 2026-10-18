@@ -1,6 +1,7 @@
 """Phase II audit, media-auth, guest guard, metrics, and dynamic QR routes."""
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import re
@@ -26,6 +27,27 @@ from .common import run_tx
 router = APIRouter()
 _media_sample_lock = threading.Lock()
 _media_sample = {"at": 0.0, "bytes": 0}
+_qr_inspections: dict[str, asyncio.Task] = {}
+
+
+async def _inspect_qr(entity_id: str, family: str) -> dict:
+    """Share overlapping read-only inspections, never retain a cached snapshot."""
+    task = _qr_inspections.get(entity_id)
+    if task is None:
+        task = asyncio.create_task(run_tx(day2.qr_metadata, entity_id,
+                                          inspect=True, device_family=family))
+        _qr_inspections[entity_id] = task
+
+        def finished(done):
+            if _qr_inspections.get(entity_id) is done:
+                _qr_inspections.pop(entity_id, None)
+            # Retrieve failures even if every HTTP waiter disconnected.
+            if not done.cancelled():
+                done.exception()
+
+        task.add_done_callback(finished)
+    # One disconnected viewer must not cancel the read for all other viewers.
+    return await asyncio.shield(task)
 
 
 def _bearer(request: Request) -> str | None:
@@ -105,6 +127,8 @@ async def costream(request: Request):
 async def qr_metadata(entity_id: str, request: Request, inspect: bool = False):
     ua = request.headers.get("user-agent", "").lower()
     family = "mobile" if any(x in ua for x in ("android", "iphone", "mobile")) else "desktop"
+    if inspect:
+        return await _inspect_qr(entity_id, family)
     return await run_tx(day2.qr_metadata, entity_id, inspect=inspect, device_family=family)
 
 
