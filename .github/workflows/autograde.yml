@@ -33,6 +33,14 @@ jobs:
           test "$(curl -fsS http://localhost:8080/health | jq -r .status)" = ok
           test "$(curl -fsS http://localhost:4444/status | jq -r .value.ready)" = true
           test "$(curl -fsS http://localhost:4444/status | jq -r '.value.nodes | length')" -ge 3
+      - name: Three-session guest browser acceptance
+        env:
+          RUN_SELENIUM_GRID: "1"
+          SELENIUM_WEB_BASE_URL: http://api:8080
+          SELENIUM_API_BASE_URL: http://127.0.0.1:8080
+        run: |
+          curl -fsS -X POST http://localhost:8080/audit/v1/reset
+          pytest -q -n 3 tests/selenium --junitxml=tests/reports/selenium-report.xml
       - uses: grafana/setup-k6-action@v1
       - name: Required k6 profile
         run: mkdir -p tests/reports && k6 run --summary-export=tests/reports/k6-summary.json tests/k6_load.js

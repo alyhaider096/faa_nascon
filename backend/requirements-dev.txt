@@ -4,3 +4,6 @@ pytest-cov==7.1.0
 coverage==7.10.7
 httpx==0.28.1
 pypdf==5.9.0
+pytest-xdist==3.8.0
+selenium==4.38.0
+Appium-Python-Client==5.2.4
