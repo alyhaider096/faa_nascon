@@ -1,14 +1,14 @@
 {
-  "source_sha": "758d46ce860d4531d843f78160c6a94d8fb0ec8b",
-  "raw_report": "tests/reports/post-integration-coverage.json",
-  "scope": "Measured executable lines within top-level functions in Day 2 API/domain and worker; shared worker relay/main counted in moderation_dlq and observability. Function regions exclude module initialization and external dependencies; this is not whole-stack coverage.",
+  "source_sha": "ad49d49afc88c6e6ac2cc663945929bc51484be9",
+  "raw_report": "tests/reports/extended-coverage.json",
+  "scope": "Executable lines within all top-level functions in Day 2 API/domain and worker. Shared relay/main worker functions counted in moderation_dlq and observability. Module initialization and dependencies outside these source files are excluded; these percentages do not establish whole-stack or real-media acceptance.",
   "groups": {
     "streaming": [
       {
         "file": "backend/app/api/day2.py",
         "function": "_kick_media_publishers",
-        "covered": 1,
-        "missing": 14
+        "covered": 14,
+        "missing": 1
       },
       {
         "file": "backend/app/api/day2.py",
@@ -85,8 +85,8 @@
       {
         "file": "backend/app/worker.py",
         "function": "active_media_paths",
-        "covered": 1,
-        "missing": 6
+        "covered": 7,
+        "missing": 0
       },
       {
         "file": "backend/app/worker.py",
@@ -117,8 +117,8 @@
       {
         "file": "backend/app/domain/day2.py",
         "function": "costream",
-        "covered": 32,
-        "missing": 3
+        "covered": 34,
+        "missing": 1
       },
       {
         "file": "backend/app/domain/day2.py",
@@ -159,11 +159,17 @@
       {
         "file": "backend/app/domain/day2.py",
         "function": "costream_action",
-        "covered": 42,
-        "missing": 24
+        "covered": 55,
+        "missing": 11
       }
     ],
     "qr_guest": [
+      {
+        "file": "backend/app/api/day2.py",
+        "function": "_inspect_qr",
+        "covered": 12,
+        "missing": 0
+      },
       {
         "file": "backend/app/api/day2.py",
         "function": "_bearer",
@@ -173,7 +179,7 @@
       {
         "file": "backend/app/api/day2.py",
         "function": "qr_metadata",
-        "covered": 4,
+        "covered": 6,
         "missing": 0
       },
       {
@@ -251,8 +257,8 @@
       {
         "file": "backend/app/domain/day2.py",
         "function": "_target",
-        "covered": 5,
-        "missing": 4
+        "covered": 6,
+        "missing": 3
       },
       {
         "file": "backend/app/domain/day2.py",
@@ -335,8 +341,8 @@
       {
         "file": "backend/app/domain/day2.py",
         "function": "append_public_match_event",
-        "covered": 29,
-        "missing": 4
+        "covered": 31,
+        "missing": 2
       }
     ],
     "moderation_dlq": [
@@ -391,8 +397,8 @@
       {
         "file": "backend/app/worker.py",
         "function": "_stop",
-        "covered": 1,
-        "missing": 1
+        "covered": 2,
+        "missing": 0
       },
       {
         "file": "backend/app/worker.py",
@@ -403,8 +409,8 @@
       {
         "file": "backend/app/worker.py",
         "function": "main",
-        "covered": 1,
-        "missing": 32
+        "covered": 31,
+        "missing": 2
       }
     ],
     "observability": [
@@ -441,8 +447,8 @@
       {
         "file": "backend/app/worker.py",
         "function": "_stop",
-        "covered": 1,
-        "missing": 1
+        "covered": 2,
+        "missing": 0
       },
       {
         "file": "backend/app/worker.py",
@@ -453,8 +459,8 @@
       {
         "file": "backend/app/worker.py",
         "function": "main",
-        "covered": 1,
-        "missing": 32
+        "covered": 31,
+        "missing": 2
       }
     ]
   }

@@ -1,5 +1,61 @@
 # Requirement Traceability
 
+## Extended-deadline checkpoint - 18 October 2026, 14:10 PKT
+
+The user explicitly extended code/push authorization to **14:20 PKT**. This
+checkpoint supersedes the earlier freeze and failed-load/low-coverage statuses
+for the verified local targets, while retaining those runs as history.
+
+Application optimization source: `75f24268c30ae334b6e7396bb22de717f651b725`.
+Additional resilience tests / coverage generator: `ad49d49`.
+
+| Gate | Actual measured result |
+| --- | --- |
+| Official unchanged k6 profile | **PASS**, 500 viewers + 50 posters for 15s, 14,757 requests, zero failed requests, p95 **693.66 ms**; `tests/reports/k6-summary.json` |
+| Four screenshot adversarial scenarios | **7 passed**, including two QR status variants and two inspection concurrency safeguards; `grading-scenarios.xml` |
+| Complete regression after application change | **458 passed, 17 skipped, 8 warnings in 223.97s**; `extended-tests.xml` |
+| Additional resilience / invitation lifecycle | **5 passed**, 2 warnings in 8.90s; `resilience-tests.xml` |
+| Measured functional-region coverage | streaming 95.92%, costream 90.78%, qr_guest 93.61%, moderation_dlq 96.90%, observability 90.00%; COVERAGE_DAY2.json with reproducible per-function denominators in day2-coverage-mapping.json |
+| GitHub Actions salts | User explicitly approved exact keys/destination. Both encrypted secret PUTs returned 201 and both repository secret names were verified present; values never printed/committed. |
+
+The prior native k6 failures were confounded by an ADB forward owning
+127.0.0.1:8080 to the Pixel's port 18080. The old proxy run also had transport
+issues. Preserved as `k6-summary-adb-collision.json` and earlier proxy reports.
+An exclusive Linux API using the pinned backend requirements and mounted source,
+with k6 sharing its network namespace, removed both ambiguities. Before read
+coalescing that isolated target had zero failures but p95 2.07s, preserved as
+`k6-summary-linux-before-coalescing.json`. After optimization both gates passed.
+
+QR inspection now shares only overlapping in-flight reads. Completed results
+are removed immediately, errors can be retried, and cancellation of one viewer
+does not cancel other viewers. Actual scans retain per-request transactional
+increments. Tests verify the next read sees changed state immediately.
+
+Load command: `docker run --rm --network container:fatima-load-api --mount
+<repo>:/scripts grafana/k6:latest run --quiet
+--summary-export=/scripts/tests/reports/k6-summary.json /scripts/tests/k6_load.js`.
+Target: owned isolated Linux API, PostgreSQL gridqa, Redis DB 1; no Windows
+localhost or socat proxy. Full regression uses separate nascon_test / Redis DB 0.
+Regression command: `python -m pytest tests -q -p no:cacheprovider --cov=backend/app
+--cov-report=json:tests/reports/extended-coverage.json
+--junitxml=tests/reports/extended-tests.xml`. Additional resilience command uses
+tests/integration/test_day2_resilience.py with --cov-append and its separate XML.
+Coverage reproduction: `python tests/day2/measure_coverage.py
+tests/reports/extended-coverage.json`. Scope excludes module initialization and
+external source dependencies; all functions in the selected API/domain/worker
+files are mapped, shared worker functions counted transparently in both groups.
+Media probe/recovery tests use simulated external service responses and do not
+replace live media acceptance.
+
+The four-way host-drop state preserves the composite URL and chat room; actual
+continuous playback and zero zombie FFmpeg/WebRTC processes are **NOT VERIFIED**
+without a real publisher. Cross-surface chat remains skipped. Abdullah's deployed
+keys/media and the full clean Compose startup remain unverified. Earlier latest
+CI failed solely at missing-secret validation; keys are now provisioned, but the
+next workflow must be observed before claiming a CI pass. Existing actual Grid
+3-pass and Pixel 2-pass/1-skip reports remain applicable to unchanged frontend.
+
+
 ## Pixel evidence completion - 18 October 2026, 14:00 PKT
 
 Physical Pixel Appium run: **2 passed, 1 skipped in 60.54 seconds**.

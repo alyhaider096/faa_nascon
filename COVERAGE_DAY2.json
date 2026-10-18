@@ -1,7 +1,7 @@
 {
-  "streaming": 82.99,
-  "costream": 80.14,
-  "qr_guest": 92.06,
-  "moderation_dlq": 72.87,
-  "observability": 55.56
+  "streaming": 95.92,
+  "costream": 90.78,
+  "qr_guest": 93.61,
+  "moderation_dlq": 96.9,
+  "observability": 90.0
 }
