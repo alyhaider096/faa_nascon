@@ -1,5 +1,27 @@
 # Requirement Traceability
 
+## Hourly QA checkpoint - 18 October 2026, 12:05 PKT scheduled run
+
+Integrated source reviewed: `c3848bd` (Ali's interactive demo), including
+`330d475` and the previous QA commits. `tests/reports/checkpoint-1205.xml`
+records 176 local tests passed, 15 skipped: four opt-in PostgreSQL tests and
+eleven live QR cases. No deployed acceptance or Day 2 production coverage is
+inferred from these results.
+
+Current UI findings: `tests/reports/FRONTEND_REVIEW_330d475.md` and
+`tests/reports/DEMO_REVIEW_c3848bd.md`. Guest login/cart continuation, co-stream
+playback mapping, failed-media cleanup and live permission controls remain open.
+Demo rehearsal adds visible role actions but has duplicate-name roster identity,
+layout-capacity and empty-session termination defects. These are review findings;
+no teammate implementation was edited during this checkpoint.
+
+**Release blocker remains open:** the private keys are supplied locally but
+`.env.example`, API/worker Compose forwarding and backend DAY2_SALT loading are
+still absent. CI secret provisioning and deployed signature verification remain
+unverified. See `tests/qr/SALT_HANDOFF.md`; do not mark salt setup complete.
+The candidate deployed health URL still timed out, so live QR/media/Grid/Appium
+acceptance remains not run. Obtain organizer DAY1_BASE_SHA before ancestry claims.
+
 ## Day 2 QA baseline - 18 October 2026
 
 Baseline inspected: `c9ad86fb44730cb02f3556727596ceec8b4530fa`.

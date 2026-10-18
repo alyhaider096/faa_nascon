@@ -52,6 +52,20 @@
 - Scope: QA files, domain-fixture integration test, traceability and evidence only; no UI, service, migration, shared configuration or CI edits.
 - Exact-value scan found no real salts in tracked/unignored files under 2 MB; private environment file is Git-ignored. No key material printed in reports.
 
+## Scheduled 12:05 PKT checkpoint - 18 October 2026
+
+- Integrated tested source: `c3848bdd0b27163eec6111679f80fdae6a3b7a41`; origin/main fetched and no newer commit was present at start.
+- Environment: Windows isolated Python 3.12, pytest 8.3.5; SQLite domain fixtures and synthetic QR export assets. Backend dependencies now match backend/requirements.txt. No deployed target configured for acceptance.
+- Command: `python -m pytest tests/domain tests/qr -q -p no:cacheprovider --junitxml=tests/reports/checkpoint-1205.xml`.
+- Actual result: 176 passed, 15 skipped, two dependency deprecation warnings in 2.97s. Four skipped cases need PostgreSQL opt-in configuration; eleven skipped QR cases need live target/fixtures and mutation authorization. This command did not start PostgreSQL or establish live QR acceptance.
+- Command: `python tests/qr/check_salt_readiness.py --env-file .env.day2.local`.
+- Actual result: exit 1; both private values supplied, all three static DAY2_SALT wiring checks BLOCKED. No key material printed; runtime/CI keys are not verified.
+- Read-only health probe: candidate `http://10.155.234.142:8080/health` timed out after 5s. No reset, fixture setup or remote mutation attempted.
+- Frontend review evidence now retained in `FRONTEND_REVIEW_330d475.md` and `DEMO_REVIEW_c3848bd.md`. Source-level reproductions were described to the user; native/device/live-media acceptance was not claimed.
+- Recent review checks: TypeScript and lint passed on c3848bd. On 330d475, web export and Expo Doctor (20/20) passed after a non-lockfile-changing local install; clean npm ci failed and remains open. These were review checks before this heartbeat, not rerun as part of the 176-test command.
+- No COVERAGE_DAY2.json generated: no measured five-module production coverage is available. Day 1 mappings and coverage artifacts preserved.
+- Checkpoint changes contain evidence/traceability only; Ali's UI and Abdullah's implementation/configuration were not edited.
+
 ## Recording rules
 
 For each run append exact tested SHA, timestamp, target URL/environment, command,
